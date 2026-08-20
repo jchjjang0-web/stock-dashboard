@@ -1,11 +1,10 @@
 // 한국투자증권 API 프록시 (Vercel Serverless Function)
-// 브라우저 → 이 서버 → 한국투자증권 API (CORS 우회)
+// 거래대금 데이터 추가 버전
 
 let cachedToken = null;
 let tokenExpiry = 0;
 
 export default async function handler(req, res) {
-  // CORS 헤더
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   if (req.method === 'OPTIONS') return res.status(200).end();
@@ -18,11 +17,10 @@ export default async function handler(req, res) {
     : 'https://openapi.koreainvestment.com:9443';
 
   if (!APPKEY || !APPSECRET) {
-    return res.status(500).json({ error: 'API 키가 설정되지 않았습니다. Vercel 환경변수를 확인하세요.' });
+    return res.status(500).json({ error: 'API 키가 설정되지 않았습니다.' });
   }
 
   try {
-    // 토큰 발급 (캐시 활용)
     if (!cachedToken || Date.now() > tokenExpiry) {
       const tokenRes = await fetch(BASE + '/oauth2/tokenP', {
         method: 'POST',
@@ -38,17 +36,14 @@ export default async function handler(req, res) {
         return res.status(401).json({ error: '토큰 발급 실패', detail: tokenData });
       }
       cachedToken = tokenData.access_token;
-      // 토큰 유효시간: 약 24시간이지만 안전하게 20시간으로 설정
       tokenExpiry = Date.now() + 20 * 60 * 60 * 1000;
     }
 
-    // 종목 코드 확인
     const { code } = req.query;
     if (!code) {
-      return res.status(400).json({ error: '종목 코드(code)를 입력하세요. 예: /api/stock?code=005930' });
+      return res.status(400).json({ error: '종목 코드(code)를 입력하세요.' });
     }
 
-    // 현재가 조회
     const url = `${BASE}/uapi/domestic-stock/v1/quotations/inquire-price?fid_cond_mrkt_div_code=J&fid_input_iscd=${code}`;
     const priceRes = await fetch(url, {
       headers: {
@@ -73,8 +68,10 @@ export default async function handler(req, res) {
         rate: parseFloat(o.prdy_ctrt) || 0,
         up: sign === '1' || sign === '2' ? true : sign === '4' || sign === '5' ? false : null,
         volume: parseInt(o.acml_vol) || 0,
+        tradingValue: parseInt(o.acml_tr_pbmn) || 0,
         high: parseInt(o.stck_hgpr) || 0,
         low: parseInt(o.stck_lwpr) || 0,
+        marketCap: parseInt(o.hts_avls) || 0,
       });
     }
 
@@ -83,4 +80,3 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: err.message });
   }
 }
-
