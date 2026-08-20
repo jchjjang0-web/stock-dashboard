@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>테마별 실시간 주식 대시보드</title>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/pretendard/1.3.9/static/pretendard.min.css" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Pretendard',-apple-system,sans-serif;background:#0f1117;color:#e2e4e9;line-height:1.6}
+.header{background:linear-gradient(135deg,#131620,#1a1f2e);border-bottom:1px solid #2a2f3e;padding:24px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.header h1{font-size:22px;font-weight:800;color:#fff}
+.header-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.status{font-size:12px;padding:5px 12px;border-radius:16px;font-weight:600}
+.status.live{background:#22c55e20;color:#4ade80}
+.status.off{background:#ef444420;color:#f87171}
+.status.loading{background:#f59e0b20;color:#fbbf24}
+.btn{padding:8px 16px;border-radius:10px;border:1px solid #2a2f3e;background:#1a1f2e;color:#e2e4e9;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;font-family:inherit}
+.btn:hover{background:#252b3d;border-color:#3b4260}
+.btn.primary{background:#3b82f6;border-color:#3b82f6;color:#fff}
+.btn.primary:hover{background:#2563eb}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.progress-bar{width:100%;max-width:960px;margin:0 auto;padding:0 16px}
+.progress-track{height:4px;background:#1e2333;border-radius:2px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,#3b82f6,#22c55e);border-radius:2px;transition:width .3s;width:0%}
+.progress-text{font-size:11px;color:#6b7280;text-align:center;padding:6px 0}
+.nav-wrap{position:sticky;top:0;z-index:100;background:#131620ee;backdrop-filter:blur(12px);border-bottom:1px solid #1e2333;padding:10px 16px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.nav-wrap::-webkit-scrollbar{display:none}
+.nav{display:flex;gap:6px;min-width:max-content}
+.nav a{display:inline-block;padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;color:#8b92a5;background:#1a1f2e;text-decoration:none;white-space:nowrap;transition:all .2s;border:1px solid transparent}
+.nav a:hover{color:#fff;background:#252b3d;border-color:#3b4260}
+.container{max-width:960px;margin:0 auto;padding:20px 16px 80px}
+.sector{margin-bottom:28px;border-radius:14px;background:#161a26;border:1px solid #1e2333;overflow:hidden}
+.sector-head{display:flex;align-items:center;gap:10px;padding:16px 18px 12px;border-bottom:1px solid #1e2333}
+.sector-icon{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.sector-head h2{font-size:17px;font-weight:800;color:#fff}
+.sector-head .count{margin-left:auto;font-size:11px;color:#6b7280;background:#1e2333;padding:3px 10px;border-radius:12px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{padding:9px 14px;font-weight:600;color:#6b7280;text-align:left;font-size:11px;background:#131620}
+thead th:nth-child(2),thead th:nth-child(3),thead th:nth-child(4){text-align:right}
+tbody tr{border-top:1px solid #1a1e2a;transition:background .15s}
+tbody tr:hover{background:#1a1f2e}
+td{padding:9px 14px;vertical-align:top}
+td:nth-child(2),td:nth-child(3),td:nth-child(4){text-align:right;font-variant-numeric:tabular-nums}
+.sn{font-weight:700;color:#e2e4e9}
+.sr{display:block;font-size:11px;color:#6b7280;margin-top:1px;line-height:1.4}
+.price{font-weight:600;color:#d1d5db}
+.up{color:#ef4444}.down{color:#3b82f6}.flat{color:#6b7280}
+.leader{display:inline-block;font-size:9px;font-weight:700;background:#ef444420;color:#f87171;padding:1px 6px;border-radius:4px;margin-left:5px;vertical-align:middle}
+.updated-at{text-align:center;padding:14px;font-size:11px;color:#4b5563}
+.bg-semi{background:#6366f120}.bg-mlcc{background:#8b5cf620}.bg-ai{background:#06b6d420}.bg-robot{background:#10b98120}
+.bg-power{background:#f59e0b20}.bg-nuke{background:#ef444420}.bg-solar{background:#f9731620}.bg-batt{background:#22c55e20}
+.bg-oil{background:#78716c20}.bg-space{background:#818cf820}.bg-optic{background:#a78bfa20}.bg-coin{background:#fbbf2420}
+.bg-fin{background:#14b8a620}.bg-def{background:#64748b20}.bg-ship{background:#0ea5e920}.bg-bio{background:#a3e63520}
+.bg-beauty{background:#f472b620}.bg-nk{background:#fb923c20}
+.error-msg{background:#ef444420;border:1px solid #ef444440;border-radius:10px;padding:16px;margin:16px;color:#f87171;font-size:13px;text-align:center}
+.settings-bar{background:#1a1f2e;border:1px solid #2a2f3e;border-radius:10px;padding:12px 16px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.settings-bar span{font-size:13px;color:#9ca3af}
+.settings-bar select{background:#0f1117;border:1px solid #2a2f3e;color:#e2e4e9;padding:6px 10px;border-radius:8px;font-size:13px;font-family:inherit}
+@media(max-width:600px){
+.header h1{font-size:18px}table{font-size:12px}td,thead th{padding:7px 10px}.sr{font-size:10px}.sector-head h2{font-size:15px}.header{padding:16px}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>📊 실시간 테마별 대시보드</h1>
+  <div class="header-right">
+    <span id="statusBadge" class="status off">⏸ 대기 중</span>
+    <button class="btn primary" id="refreshBtn" onclick="fetchAllPrices()">🔄 시세 불러오기</button>
+  </div>
+</div>
+
+<div class="progress-bar" id="progressArea" style="display:none">
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+  <div class="progress-text" id="progressText"></div>
+</div>
+
+<div class="nav-wrap"><div class="nav" id="navBar"></div></div>
+
+<div class="container">
+  <div class="settings-bar">
+    <span>⏱ 자동 새로고침:</span>
+    <select id="refreshInterval" onchange="setAutoRefresh()">
+      <option value="0">수동</option>
+      <option value="60">1분</option>
+      <option value="180">3분</option>
+      <option value="300" selected>5분</option>
+    </select>
+  </div>
+  <div id="errorArea"></div>
+  <div id="dashboard"></div>
+</div>
+
+<script>
+const THEMES=[
+{id:'semi',name:'반도체',icon:'💎',bg:'bg-semi',stocks:[
+{code:'005930',name:'삼성전자',leader:1,role:'국내 증시와 메모리·파운드리를 아우르는 최대 대장주',price:270250,change:11250,rate:4.34,up:1},
+{code:'000660',name:'SK하이닉스',leader:1,role:'HBM(고대역폭 메모리) 시장을 선도하는 메모리 강자',price:932000,change:96000,rate:5.23,up:1},
+{code:'042700',name:'한미반도체',role:'HBM 필수 장비(TC 본더) 글로벌 1위',price:223500,change:500,rate:0.22,up:0},
+{code:'039030',name:'이오테크닉스',role:'레이저 마킹 및 첨단 패키징 가공 독보적 1위',price:318500,change:1000,rate:0.31,up:1},
+{code:'067310',name:'하나마이크론',role:'메모리 및 시스템 반도체 패키징(OSAT) 대표주',price:37100,change:100,rate:0.27,up:1},
+{code:'131970',name:'두산테스나',role:'국내 1위 웨이퍼/반도체 테스트 전문',price:82700,change:800,rate:0.98,up:0},
+{code:'319660',name:'피에스케이',role:'감광액 제거(PR 스트립) 세계 1위',price:162200,change:7800,rate:4.59,up:0},
+{code:'240810',name:'원익IPS',role:'국내 대표 종합 증착 장비사 (삼성 CAPEX 수혜)',price:116200,change:100,rate:0.09,up:1},
+{code:'036930',name:'주성엔지니어링',role:'차세대 ALD(증착) 장비 기술력 강자',price:167200,change:2000,rate:1.18,up:0},
+{code:'095610',name:'테스',role:'증착 및 식각 장비 공급 대표주',price:165000,change:700,rate:0.42,up:0},
+{code:'058470',name:'리노공업',role:'반도체 검사 소켓/핀 독점급 고마진 알짜주',price:74100,change:4100,rate:5.86,up:0},
+{code:'007660',name:'이수페타시스',role:'AI 서버용 고성능 초다층 기판(MLB) 핵심 공급사',price:96800,change:8200,rate:9.26,up:0},
+{code:'222800',name:'심텍',role:'반도체용 패키지 기판 전문',price:101700,change:800,rate:0.79,up:1},
+{code:'399720',name:'가온칩스',role:'삼성 파운드리 핵심 디자인하우스',price:45000,change:200,rate:0.44,up:0},
+{code:'080220',name:'제주반도체',role:'저전력 메모리(LPDDR) 특화 팹리스',price:79100,change:800,rate:1.02,up:0}]},
+{id:'mlcc',name:'MLCC',icon:'⚡',bg:'bg-mlcc',stocks:[
+{code:'009150',name:'삼성전기',leader:1,role:'국내 IT·부품 및 전장 MLCC 산업 대표 대장주',price:368000,change:58000,rate:4.43,up:1},
+{code:'011070',name:'LG이노텍',leader:1,role:'IT·부품 및 전장 MLCC 대장주',price:669000,change:40000,rate:6.36,up:1},
+{code:'001820',name:'삼화콘덴서',role:'국내 대표 MLCC 종합 제조 기업',price:90400,change:5000,rate:5.85,up:1},
+{code:'353200',name:'대덕전자',role:'AI 서버 및 반도체용 첨단 패키지 기판 수혜주',price:124100,change:3600,rate:2.99,up:1},
+{code:'078600',name:'대주전자재료',role:'MLCC 전극용 은(Ag) 및 특수 파우더 소재',price:75200,change:2900,rate:4.01,up:1},
+{code:'052710',name:'아모텍',role:'전장 및 서버용 특화 MLCC 제조사',price:16160,change:800,rate:4.72,up:0},
+{code:'092460',name:'한올반도체',role:'MLCC 외관 검사 장비 전문',price:14300,change:980,rate:6.41,up:0},
+{code:'166480',name:'코칩',role:'삼성전기 MLCC 공식 글로벌 유통사',price:13480,change:580,rate:4.50,up:0}]},
+{id:'ai',name:'AI 인프라',icon:'🧠',bg:'bg-ai',stocks:[
+{code:'003550',name:'LG',role:'그룹 차원 AI 연구(엑사원) 및 데이터센터 인프라 수혜',price:98900,change:1600,rate:1.64,up:1},
+{code:'035420',name:'NAVER',role:'독자 AI 모델(하이퍼클로바X) 및 자체 AI 데이터센터',price:198200,change:5200,rate:2.69,up:1},
+{code:'017670',name:'SK텔레콤',role:'AI 데이터센터(AIDC) 인프라 구축 및 통신망 선도',price:93400,change:8300,rate:9.75,up:1},
+{code:'018260',name:'삼성에스디에스',role:'AI 전용 데이터센터 구축·운영 및 클라우드 대장주',price:195800,change:4300,rate:2.25,up:1},
+{code:'064350',name:'LG씨엔에스',role:'글로벌 AI 데이터센터 컨설팅·구축·운영 전문',price:64600,change:2100,rate:3.36,up:1}]},
+{id:'robot',name:'로봇',icon:'🤖',bg:'bg-robot',stocks:[
+{code:'005380',name:'현대차',leader:1,role:'보스턴 다이내믹스 인수, 로봇·휴머노이드 생태계 주도',price:425500,change:26500,rate:6.64,up:1},
+{code:'307950',name:'현대오토에버',role:'현대차그룹 SW·IT 전담사, 로봇 관제 수혜',price:414000,change:37500,rate:9.96,up:1},
+{code:'066570',name:'LG전자',role:'배송/물류/서비스 로봇 자체 개발',price:186400,change:13200,rate:7.62,up:1},
+{code:'277810',name:'레인보우로보틱스',role:'삼성전자 지분 투자 협동로봇 및 휴머노이드 강자',price:492000,change:80500,rate:19.55,up:1},
+{code:'108490',name:'로보티즈',role:'자율주행 서비스 로봇 및 감속기/액추에이터 전문',price:225500,change:28500,rate:14.47,up:1},
+{code:'090360',name:'로보스타',role:'LG그룹 계열 산업용/제조용 로봇 전문',price:67500,change:8600,rate:14.60,up:1},
+{code:'058610',name:'에스피지',role:'로봇 핵심 정밀 감속기 국내 1위',price:84700,change:18700,rate:28.33,up:1},
+{code:'037230',name:'삼현',role:'로봇 관절 핵심 스마트 액추에이터 전문',price:34950,change:6850,rate:24.38,up:1},
+{code:'454910',name:'두산로보틱스',role:'국내 협동로봇 시장 점유율 1위',price:69800,change:5900,rate:9.23,up:1}]},
+{id:'power',name:'전력기기, 전선',icon:'🔌',bg:'bg-power',stocks:[
+{code:'010120',name:'LS ELECTRIC',leader:1,role:'배전반/중저압 전력기기 국내 1위',price:195800,change:6700,rate:3.54,up:1},
+{code:'267260',name:'HD현대일렉트릭',leader:1,role:'초고압 변압기 대표 대장주 (미국 전력망 수혜)',price:808000,change:30000,rate:3.86,up:1},
+{code:'298040',name:'효성중공업',role:'초고압 변압기 및 차세대 전력망 강자',price:726000,change:48000,rate:5.74,up:1},
+{code:'062040',name:'산일전기',role:'특수 변압기 및 신재생/플랜트용 전문',price:171300,change:6500,rate:3.94,up:1},
+{code:'103590',name:'일진전기',role:'초고압 변압기 및 중저압 전선 중견사',price:62300,change:3000,rate:5.06,up:1},
+{code:'033100',name:'제룡전기',role:'배전용 변압기 북미 수출 독보적 1위',price:44100,change:1450,rate:3.40,up:1},
+{code:'000500',name:'가온전선',role:'LS그룹 계열 중저압 전선 및 통신선',price:218000,change:36900,rate:20.38,up:1},
+{code:'001440',name:'대한전선',role:'초고압 케이블 및 해저케이블 대표주',price:28100,change:1550,rate:5.84,up:1},
+{code:'006340',name:'대원전선',role:'전력선 및 자동차용 전선 전문',price:12790,change:950,rate:8.02,up:1}]},
+{id:'nuke',name:'원자력 (SMR)',icon:'☢️',bg:'bg-nuke',stocks:[
+{code:'034020',name:'두산에너빌리티',leader:1,role:'국내 원전 주기기 및 SMR 수주 독점급 대장주',price:71000,change:4200,rate:6.29,up:1},
+{code:'000720',name:'현대건설',role:'대형 원전 시공 1위 및 SMR 글로벌 독점 수주',price:100300,change:6500,rate:6.93,up:1},
+{code:'047040',name:'대우건설',role:'체코 원전 K-원전 팀코리아 시공 핵심',price:15540,change:740,rate:5.00,up:1},
+{code:'375500',name:'DL이앤씨',role:'미국 X-Energy 투자 및 SMR 설계·시공',price:62400,change:3400,rate:5.76,up:1},
+{code:'006360',name:'GS건설',role:'원자력사업단 신설 SMR·원전 본격화',price:29400,change:3800,rate:14.84,up:1},
+{code:'052690',name:'한전기술',role:'원자력발전소 종합 설계 1위 (공기업)',price:92200,change:4800,rate:5.49,up:1},
+{code:'083650',name:'비에이치아이',role:'원전 보조기기(BOP) 및 복합화력 전문',price:43900,change:3350,rate:8.26,up:1},
+{code:'010050',name:'우진',role:'원자로 핵심 계측기 및 계측제어 독점',price:13910,change:880,rate:6.75,up:1},
+{code:'044490',name:'태웅',role:'SMR 및 원전용 초대형 단조 부품 세계적 강자',price:26050,change:1400,rate:5.68,up:1},
+{code:'032820',name:'우리기술',role:'원전 제어계측시스템(DCS) 국산화 핵심',price:10190,change:700,rate:7.38,up:1}]},
+{id:'solar',name:'태양광, 풍력, 연료전지',icon:'☀️',bg:'bg-solar',stocks:[
+{code:'009830',name:'한화솔루션',leader:1,role:'북미 태양광 모듈 독보적 1위 대장주',price:27550,change:950,rate:3.57,up:1},
+{code:'322000',name:'HD현대에너지솔루션',role:'태양광 셀·모듈 제조 및 발전 솔루션',price:134800,change:4800,rate:3.69,up:1},
+{code:'010060',name:'OCI홀딩스',role:'태양광 핵심 폴리실리콘 글로벌 강자',price:204500,change:9500,rate:4.87,up:1},
+{code:'112610',name:'씨에스윈드',role:'글로벌 풍력발전 타워 점유율 1위',price:40000,change:1300,rate:3.36,up:1},
+{code:'336260',name:'두산퓨얼셀',role:'국내 발전용 수소 연료전지 점유율 1위',price:40500,change:2100,rate:5.47,up:1}]},
+{id:'batt',name:'2차전지',icon:'🔋',bg:'bg-batt',stocks:[
+{code:'006400',name:'삼성SDI',leader:1,role:'프리미엄 배터리 및 전고체 배터리 선도 대장주',price:425500,change:9000,rate:2.16,up:1},
+{code:'086520',name:'에코프로',role:'에코프로그룹 지주사 (양극재 밸류체인)',price:78800,change:3600,rate:4.79,up:1},
+{code:'247540',name:'에코프로비엠',role:'하이니켈 양극재 글로벌 점유율 1위',price:109900,change:4000,rate:3.78,up:1},
+{code:'373220',name:'LG에너지솔루션',role:'글로벌 상위 국내 1위 배터리 셀 제조사',price:325750,change:8750,rate:2.76,up:1},
+{code:'003670',name:'포스코퓨처엠',role:'양극재와 음극재 모두 생산 POSCO 핵심 소재사',price:143000,change:4400,rate:3.17,up:1},
+{code:'066970',name:'엘앤에프',role:'테슬라 공급망 핵심 하이니켈 양극재',price:84000,change:1200,rate:1.45,up:1},
+{code:'093370',name:'후성',role:'2차전지 전해질(LiPF6) 및 특수가스 전문',price:11300,change:630,rate:5.90,up:1}]},
+{id:'oil',name:'유가 - 석유, 해운',icon:'🛢️',bg:'bg-oil',stocks:[
+{code:'024060',name:'흥구석유',role:'유가 상승 대표 테마주',price:13710,change:1280,rate:10.30,up:1},
+{code:'010950',name:'S-Oil',role:'국내 3위 정유사 (유가 상승 대표 대장주)',price:141700,change:100,rate:0.07,up:1},
+{code:'096770',name:'SK이노베이션',role:'국내 1위 정유 및 2차전지(SK온) 겸업',price:118400,change:2100,rate:1.81,up:1},
+{code:'047050',name:'포스코인터내셔널',role:'해외 자원개발(E&P) 및 종합상사 대장주',price:51700,change:900,rate:1.71,up:0}]},
+{id:'space',name:'우주항공',icon:'🚀',bg:'bg-space',stocks:[
+{code:'099320',name:'쎄트렉아이',leader:1,role:'국내 유일 인공위성 시스템 개발 및 위성 제조',price:78300,change:4100,rate:5.53,up:1},
+{code:'189300',name:'인텔리안테크',role:'LEO 위성통신 안테나 글로벌 점유율 1위',price:60900,change:1800,rate:3.05,up:1},
+{code:'218410',name:'RFHIC',role:'GaN 반도체 트랜지스터 (위성통신·레이더 핵심)',price:45200,change:1650,rate:3.79,up:1}]},
+{id:'optic',name:'광통신, 양자',icon:'🔬',bg:'bg-optic',stocks:[
+{code:'010170',name:'대한광통신',role:'국내 유일 광섬유 모유리 자체 생산',price:10300,change:440,rate:4.46,up:1},
+{code:'032500',name:'케이엠더블유',role:'5G/6G 기지국 안테나 및 필터 대표 대장주',price:14870,change:720,rate:5.09,up:1},
+{code:'050890',name:'쏠리드',role:'이동통신 및 중계기(DAS) 주요 공급사',price:9250,change:260,rate:2.89,up:1},
+{code:'115440',name:'우리넷',role:'양자암호키분배(QKD) 및 광전송장비 대표',price:6880,change:250,rate:3.77,up:1}]},
+{id:'coin',name:'스테이블코인',icon:'🪙',bg:'bg-coin',stocks:[
+{code:'377300',name:'카카오페이',leader:1,role:'모바일 결제 플랫폼 대장주 (스테이블코인 수혜)',price:41450,change:650,rate:1.59,up:1},
+{code:'258830',name:'쿠콘',role:'금융 API 전문 (블록체인 자산 연결 인프라)',price:17500,change:710,rate:4.23,up:1},
+{code:'064260',name:'다날',role:'암호화폐·디지털자산 결제 서비스 선도',price:3990,change:45,rate:1.14,up:1}]},
+{id:'fin',name:'금융지주, 증권사',icon:'🏦',bg:'bg-fin',stocks:[
+{code:'055550',name:'신한지주',leader:1,role:'4대 금융지주 대장주',price:104100,change:600,rate:0.57,up:0},
+{code:'086790',name:'하나금융지주',role:'4대 금융지주 및 적극적 주주환원 대표주',price:131500,change:1100,rate:0.83,up:0},
+{code:'105560',name:'KB금융',role:'시총 1위 금융지주',price:174700,change:700,rate:0.40,up:1},
+{code:'316140',name:'우리금융지주',role:'우리은행 중심 4대 금융지주',price:30700,change:200,rate:0.66,up:1},
+{code:'039490',name:'키움증권',role:'국내 리테일 점유율 독보적 1위 증권사',price:304000,change:1500,rate:0.49,up:1},
+{code:'006800',name:'미래에셋증권',role:'자본 규모 국내 1위 글로벌 IB 대표',price:37450,change:200,rate:0.54,up:1}]},
+{id:'def',name:'방산',icon:'🛡️',bg:'bg-def',stocks:[
+{code:'012450',name:'한화에어로스페이스',leader:1,role:'국내 방산 최대 대장주',price:899000,change:0,rate:0,up:null},
+{code:'079550',name:'LIG넥스원',role:'유도무기 및 레이더·C4I 전문 대장주',price:672000,change:0,rate:0,up:null},
+{code:'064350',name:'현대로템',role:'K2 흑표 전차 중심 지상 무기체계',price:157000,change:3900,rate:2.55,up:1},
+{code:'272210',name:'한화시스템',role:'방산 전자(레이더·위성·지휘통제) 및 ICT',price:62400,change:1800,rate:2.97,up:1},
+{code:'103140',name:'풍산',role:'대구경 탄약 독점 생산 및 동합금 소재',price:61800,change:2000,rate:3.34,up:1}]},
+{id:'ship',name:'조선',icon:'🚢',bg:'bg-ship',stocks:[
+{code:'042660',name:'한화오션',role:'LNG선 및 특수선(잠수함) 중심 대형 조선사',price:83900,change:2000,rate:2.44,up:1},
+{code:'010140',name:'삼성중공업',role:'LNG선 및 FLNG 글로벌 강자',price:21650,change:400,rate:1.88,up:1},
+{code:'329180',name:'HD현대중공업',leader:1,role:'세계 최대 종합 조선 및 해양 엔지니어링',price:465000,change:13500,rate:2.99,up:1},
+{code:'009540',name:'HD한국조선해양',role:'HD현대그룹 조선 부문 중간지주사',price:355500,change:17500,rate:5.18,up:1},
+{code:'082740',name:'한화엔진',role:'선박용 대형 디젤/이중연료 엔진 전문',price:47450,change:3050,rate:6.87,up:1},
+{code:'017960',name:'한국카본',role:'LNG 운반선 화물창용 초저온 보온재 독과점',price:22550,change:500,rate:2.27,up:1}]},
+{id:'bio',name:'바이오',icon:'🧬',bg:'bg-bio',stocks:[
+{code:'207940',name:'삼성바이오로직스',leader:1,role:'바이오의약품 위탁생산(CDMO) 글로벌 1위',price:1390000,change:5000,rate:0.36,up:0},
+{code:'196170',name:'알테오젠',role:'정맥→피하주사 전환 플랫폼 글로벌 강자',price:271000,change:2000,rate:0.73,up:0},
+{code:'128940',name:'한미약품',role:'신약 개발 기술수출 및 랩스커버리 플랫폼',price:370000,change:2500,rate:0.67,up:0},
+{code:'068270',name:'셀트리온',role:'바이오시밀러 개발·생산 및 글로벌 직판 대장주',price:171100,change:500,rate:0.29,up:0},
+{code:'141080',name:'리가켐바이오',role:'항체-약물 접합체(ADC) 신약 개발 전문',price:94500,change:900,rate:0.96,up:1}]},
+{id:'beauty',name:'뷰티 (화장품)',icon:'💄',bg:'bg-beauty',stocks:[
+{code:'278470',name:'에이피알',leader:1,role:'뷰티 디바이스(메디큐브) 및 글로벌 K-뷰티 선도',price:357000,change:8000,rate:2.19,up:0},
+{code:'192820',name:'코스맥스',role:'글로벌 점유율 1위 화장품 ODM/OEM',price:169800,change:2400,rate:1.39,up:0},
+{code:'161890',name:'한국콜마',role:'국내 최초 화장품 ODM 도입 기업',price:99000,change:2700,rate:2.65,up:1},
+{code:'257720',name:'실리콘투',role:'스타일코리안 기반 K-뷰티 글로벌 이커머스',price:35100,change:550,rate:1.54,up:1}]},
+{id:'nk',name:'남북주',icon:'🕊️',bg:'bg-nk',stocks:[
+{code:'033340',name:'좋은사람들',role:'개성공단 입주 이력 대표 속옷·내의',price:351,change:22,rate:5.90,up:0},
+{code:'025980',name:'아난티',role:'금강산 리조트 보유 이력 대표 관광/레저주',price:3605,change:80,rate:2.17,up:1},
+{code:'017800',name:'현대엘리베이터',role:'금강산 관광 독점 사업권 현대아산 최대주주',price:67800,change:800,rate:1.19,up:1},
+{code:'025860',name:'남해화학',role:'국내 최대 비료 생산 (대북 비료 지원 수혜)',price:5750,change:10,rate:0.17,up:1}]}
+];
+
+let refreshTimer=null;
+let totalStocks=0;
+
+function init(){
+  THEMES.forEach(t=>totalStocks+=t.stocks.length);
+  const navHtml=THEMES.map(t=>`<a href="#${t.id}">${t.icon} ${t.name}</a>`).join('');
+  document.getElementById('navBar').innerHTML=navHtml;
+  let html='';
+  THEMES.forEach(t=>{
+    html+=`<div class="sector" id="${t.id}"><div class="sector-head"><div class="sector-icon ${t.bg}">${t.icon}</div><h2>${t.name}</h2><span class="count">${t.stocks.length}종목</span></div><table><thead><tr><th>종목명</th><th>현재가</th><th>전일비</th><th>등락률</th></tr></thead><tbody>`;
+    t.stocks.forEach(s=>{
+      const a=s.up===1?'▲':s.up===0?'▼':'-';
+      const c=s.up===1?'up':s.up===0?'down':'flat';
+      const sg=s.up===1?'+':s.up===0?'-':'';
+      const ld=s.leader?'<span class="leader">대장주</span>':'';
+      html+=`<tr data-code="${s.code}"><td><span class="sn">${s.name}${ld}</span><span class="sr">${s.role}</span></td><td class="price">${s.price.toLocaleString()}</td><td class="${c}">${a} ${Math.abs(s.change).toLocaleString()}</td><td class="${c}">${sg}${Math.abs(s.rate).toFixed(2)}%</td></tr>`;
+    });
+    html+=`</tbody></table><div class="updated-at" id="time-${t.id}">📋 초기 데이터 · 🔄 버튼을 눌러 실시간 업데이트</div></div>`;
+  });
+  document.getElementById('dashboard').innerHTML=html;
+  document.querySelectorAll('.nav a').forEach(a=>{
+    a.addEventListener('click',e=>{
+      e.preventDefault();
+      const target=document.querySelector(a.getAttribute('href'));
+      if(target){const nh=document.querySelector('.nav-wrap').offsetHeight;window.scrollTo({top:target.offsetTop-nh-12,behavior:'smooth'});}
+    });
+  });
+}
+
+function updateRow(code,data){
+  const row=document.querySelector(`tr[data-code="${code}"]`);
+  if(!row)return;
+  const cells=row.querySelectorAll('td');
+  cells[1].textContent=data.price.toLocaleString();cells[1].className='price';
+  const a=data.up===true?'▲':data.up===false?'▼':'-';
+  const c=data.up===true?'up':data.up===false?'down':'flat';
+  cells[2].textContent=a+' '+Math.abs(data.change).toLocaleString();cells[2].className=c;
+  const sg=data.up===true?'+':data.up===false?'-':'';
+  cells[3].textContent=sg+Math.abs(data.rate).toFixed(2)+'%';cells[3].className=c;
+}
+
+async function fetchAllPrices(){
+  const btn=document.getElementById('refreshBtn');
+  const badge=document.getElementById('statusBadge');
+  const progArea=document.getElementById('progressArea');
+  const progFill=document.getElementById('progressFill');
+  const progText=document.getElementById('progressText');
+  const errArea=document.getElementById('errorArea');
+
+  btn.disabled=true;btn.textContent='⏳ 불러오는 중...';
+  badge.className='status loading';badge.textContent='⏳ 데이터 수신 중';
+  progArea.style.display='block';errArea.innerHTML='';
+
+  let done=0,ok=0,fail=0;
+  for(const theme of THEMES){
+    for(const stock of theme.stocks){
+      try{
+        const res=await fetch('/api/stock?code='+stock.code);
+        const data=await res.json();
+        if(data.success){
+          stock.price=data.price;stock.change=data.change;stock.rate=data.rate;stock.up=data.up;
+          updateRow(stock.code,data);ok++;
+        } else {fail++;}
+      }catch(e){fail++;}
+      done++;
+      const pct=Math.round(done/totalStocks*100);
+      progFill.style.width=pct+'%';
+      progText.textContent=`${done}/${totalStocks} 종목 처리 중... (성공: ${ok} / 실패: ${fail})`;
+      await new Promise(r=>setTimeout(r,55));
+    }
+  }
+
+  const now=new Date();
+  const timeStr=now.toLocaleString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  document.querySelectorAll('.updated-at').forEach(el=>{el.textContent=`✅ 실시간 업데이트 완료 · ${timeStr}`;});
+
+  if(fail>0&&ok===0){
+    errArea.innerHTML='<div class="error-msg">❌ API 연결 실패 — Vercel 환경변수(KIS_APPKEY, KIS_APPSECRET)가 설정되었는지 확인하세요</div>';
+    badge.className='status off';badge.textContent='❌ 연결 실패';
+  } else {
+    badge.className='status live';badge.textContent=`🟢 실시간 · ${timeStr}`;
+  }
+  btn.disabled=false;btn.textContent='🔄 시세 불러오기';
+  setTimeout(()=>{progArea.style.display='none';},3000);
+}
+
+function setAutoRefresh(){
+  if(refreshTimer)clearInterval(refreshTimer);
+  const sec=parseInt(document.getElementById('refreshInterval').value);
+  if(sec>0)refreshTimer=setInterval(fetchAllPrices,sec*1000);
+}
+
+init();
+setAutoRefresh();
+</script>
+</body>
+</html>
