@@ -1,6 +1,4 @@
 // 한국투자증권 API 프록시 (Vercel Serverless Function)
-// 거래대금 데이터 추가 버전
-
 let cachedToken = null;
 let tokenExpiry = 0;
 
@@ -17,7 +15,7 @@ export default async function handler(req, res) {
     : 'https://openapi.koreainvestment.com:9443';
 
   if (!APPKEY || !APPSECRET) {
-    return res.status(500).json({ error: 'API 키가 설정되지 않았습니다.' });
+    return res.status(500).json({ error: 'API 키가 설정되지 않았습니다. Vercel 환경변수를 확인하세요.' });
   }
 
   try {
@@ -41,7 +39,7 @@ export default async function handler(req, res) {
 
     const { code } = req.query;
     if (!code) {
-      return res.status(400).json({ error: '종목 코드(code)를 입력하세요.' });
+      return res.status(400).json({ error: '종목 코드(code)를 입력하세요. 예: /api/stock?code=005930' });
     }
 
     const url = `${BASE}/uapi/domestic-stock/v1/quotations/inquire-price?fid_cond_mrkt_div_code=J&fid_input_iscd=${code}`;
