@@ -143,6 +143,7 @@ body{font-family:-apple-system,'Segoe UI',sans-serif;background:#0a0e1a;color:#e
 <script>
 // ─── 데이터 ───
 const STORAGE_KEY = 'stock-dashboard-data';
+const LIVE_KEY = 'stock-live-data'; // 시세 데이터 저장용
 let liveData = {}; // code -> {price, change, rate, up, tradingValue, ...}
 let currentView = 'main'; // main | sub
 let currentThemeIdx = -1;
@@ -153,6 +154,28 @@ function loadData() {
     if (raw) return JSON.parse(raw);
   } catch(e) {}
   return { themes: [], version: 1 };
+}
+
+// 시세 데이터 저장/불러오기
+function saveLiveData() {
+  try {
+    localStorage.setItem(LIVE_KEY, JSON.stringify({
+      data: liveData,
+      savedAt: new Date().toISOString()
+    }));
+  } catch(e) {}
+}
+
+function loadLiveData() {
+  try {
+    const raw = localStorage.getItem(LIVE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      liveData = parsed.data || {};
+      return parsed.savedAt || null;
+    }
+  } catch(e) {}
+  return null;
 }
 
 // ─── 포맷 유틸 ───
@@ -436,6 +459,9 @@ async function fetchAll() {
   if (currentView === 'main') renderMain();
   else if (currentView === 'sub') openSub(currentThemeIdx);
 
+  // 시세 데이터를 localStorage에 저장 (껐다 켜도 유지)
+  saveLiveData();
+
   const ts = new Date().toLocaleString('ko-KR', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
   if (ok === 0) {
     document.getElementById('errA').innerHTML = '<div class="error-msg">❌ API 연결 실패. Vercel 환경변수(KIS_APPKEY, KIS_APPSECRET)를 확인하세요.</div>';
@@ -450,7 +476,13 @@ async function fetchAll() {
   setTimeout(() => { pa.style.display = 'none'; }, 2000);
 }
 
-// ─── 초기 렌더 ───
+// ─── 초기: 저장된 시세 불러오기 ───
+const savedAt = loadLiveData();
+if (savedAt) {
+  const t = new Date(savedAt).toLocaleString('ko-KR', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' });
+  document.getElementById('stB').className = 'st on';
+  document.getElementById('stB').textContent = `💾 저장됨 · ${t}`;
+}
 renderMain();
 </script>
 </body>
