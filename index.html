@@ -3,406 +3,454 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>테마별 대장주 대시보드</title>
-<link href="https://cdnjs.cloudflare.com/ajax/libs/pretendard/1.3.9/static/pretendard.min.css" rel="stylesheet">
+<title>주식 테마 대시보드</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Pretendard',-apple-system,sans-serif;background:#0f1117;color:#e2e4e9;line-height:1.6}
-.hd{background:linear-gradient(135deg,#131620,#1a1f2e);border-bottom:1px solid #2a2f3e;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
-.hd h1{font-size:18px;font-weight:800;color:#fff}
-.hd-r{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.st{font-size:11px;padding:4px 10px;border-radius:14px;font-weight:600}
-.st.on{background:#22c55e20;color:#4ade80}.st.off{background:#ef444420;color:#f87171}.st.ld{background:#f59e0b20;color:#fbbf24}
-.bt{padding:7px 14px;border-radius:8px;border:1px solid #2a2f3e;background:#1a1f2e;color:#e2e4e9;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s}
-.bt:hover{background:#252b3d}.bt.pr{background:#3b82f6;border-color:#3b82f6;color:#fff}.bt:disabled{opacity:.4;cursor:not-allowed}
+body{font-family:-apple-system,'Segoe UI',sans-serif;background:#0a0e1a;color:#e2e8f0;min-height:100vh}
 
-/* Search */
-.search-wrap{max-width:960px;margin:12px auto;padding:0 16px}
-.search-box{display:flex;align-items:center;background:#161a26;border:1px solid #1e2333;border-radius:10px;padding:8px 14px;gap:8px}
-.search-box input{flex:1;background:none;border:none;color:#e2e4e9;font-size:14px;font-family:inherit;outline:none}
-.search-box input::placeholder{color:#4b5563}
-.search-results{background:#161a26;border:1px solid #2a2f3e;border-radius:10px;margin-top:6px;max-height:300px;overflow-y:auto;display:none}
-.search-results.show{display:block}
-.sr-item{padding:10px 14px;border-bottom:1px solid #1e2333;cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-size:13px}
-.sr-item:hover{background:#1a1f2e}
-.sr-item .sri-name{font-weight:700}.sr-item .sri-theme{font-size:11px;color:#6b7280}
+/* 헤더 */
+.header{background:#111827;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #1e293b;position:sticky;top:0;z-index:100}
+.header h1{font-size:18px;color:#f1f5f9}
+.header-right{display:flex;gap:8px;align-items:center}
+.btn{padding:8px 14px;border-radius:8px;border:none;font-size:13px;cursor:pointer;font-weight:600;transition:all .2s}
+.btn-primary{background:#2563eb;color:#fff}
+.btn-primary:hover{background:#1d4ed8}
+.btn-secondary{background:#1e293b;color:#94a3b8}
+.btn-secondary:hover{background:#334155}
+.btn-small{padding:5px 10px;font-size:12px}
+.st{font-size:11px;padding:4px 10px;border-radius:8px;font-weight:600}
+.st.off{background:#1e293b;color:#64748b}
+.st.on{background:#064e3b;color:#6ee7b7}
+.st.ld{background:#78350f;color:#fbbf24}
 
-/* Progress */
-.pg{max-width:960px;margin:0 auto;padding:0 16px;display:none}
-.pg-track{height:3px;background:#1e2333;border-radius:2px;overflow:hidden}
-.pg-fill{height:100%;background:linear-gradient(90deg,#3b82f6,#22c55e);border-radius:2px;transition:width .3s;width:0%}
-.pg-txt{font-size:10px;color:#6b7280;text-align:center;padding:4px 0}
+/* 상태 바 */
+.status-bar{background:#111827;padding:10px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #1e293b;flex-wrap:wrap}
+.prog-area{display:none;flex:1;min-width:200px}
+.prog-bar{height:4px;background:#1e293b;border-radius:2px;overflow:hidden}
+.prog-fill{height:100%;background:#2563eb;width:0%;transition:width .3s}
+.prog-text{font-size:11px;color:#64748b;margin-top:4px}
 
-.ct{max-width:960px;margin:0 auto;padding:12px 16px 80px}
-.sec-t{font-size:15px;font-weight:800;color:#fff;margin:16px 0 10px;padding-left:2px}
+/* 컨테이너 */
+.container{max-width:1200px;margin:0 auto;padding:16px}
 
-/* Main View - Theme Cards */
-.theme-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px}
-.tc{background:#161a26;border:1px solid #1e2333;border-radius:12px;padding:14px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden}
-.tc:hover{border-color:#3b82f6;transform:translateY(-2px);box-shadow:0 4px 12px #0004}
-.tc-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
-.tc-name{font-size:14px;font-weight:800;color:#fff}
-.tc-str{font-size:12px;font-weight:700;padding:3px 8px;border-radius:6px}
-.tc-str.hot{background:#ef444420;color:#f87171}.tc-str.warm{background:#f59e0b20;color:#fbbf24}.tc-str.cool{background:#3b82f620;color:#60a5fa}.tc-str.cold{background:#6b728020;color:#9ca3af}
-.tc-list{display:flex;flex-direction:column;gap:2px}
-.tc-row{display:flex;align-items:center;gap:6px;font-size:12px}
-.tc-rk{width:16px;height:16px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;flex-shrink:0}
-.r1{background:#ef444430;color:#f87171}.r2{background:#f59e0b30;color:#fbbf24}.r3{background:#22c55e30;color:#4ade80}.r4{background:#3b82f630;color:#60a5fa}.r5{background:#6b728030;color:#9ca3af}
-.tc-sn{font-weight:600;color:#d1d5db;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.tc-sr{font-weight:700;font-size:12px}
-.tc-crown{display:flex;align-items:center;gap:4px;font-size:11px;margin-top:6px;padding-top:6px;border-top:1px solid #1e2333;color:#fbbf24}
-.tc-crown .tcn{color:#e2e4e9;font-weight:700}.tc-crown .tcv{color:#6b7280}
-.tc-empty{color:#6b7280;font-size:12px;padding:4px 0}
-.tc-arrow{position:absolute;right:14px;bottom:14px;color:#4b5563;font-size:14px}
+/* 검색 */
+.search-bar{position:relative;margin-bottom:16px}
+.search-bar input{width:100%;padding:12px 16px 12px 40px;border-radius:12px;border:1px solid #1e293b;background:#111827;color:#e2e8f0;font-size:14px;outline:none}
+.search-bar input:focus{border-color:#2563eb}
+.search-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#64748b}
 
-/* Detail View */
-#detailView{display:none}
-.detail-back{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;background:#1a1f2e;border:1px solid #2a2f3e;color:#e2e4e9;font-size:13px;font-weight:600;cursor:pointer;margin-bottom:12px;font-family:inherit;transition:all .15s}
-.detail-back:hover{background:#252b3d}
-.detail-header{background:#161a26;border:1px solid #1e2333;border-radius:14px;padding:18px;margin-bottom:12px}
-.dh-top{display:flex;align-items:center;gap:10px;margin-bottom:6px}
-.dh-icon{font-size:24px}.dh-name{font-size:20px;font-weight:800;color:#fff}
-.dh-str{font-size:14px;font-weight:700;padding:4px 10px;border-radius:8px}
-.dh-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
-.dchip{display:flex;align-items:center;gap:4px;padding:5px 10px;border-radius:6px;font-size:11px;font-weight:600}
-.dchip .dr{width:16px;height:16px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800}
-.dchip .dn{color:#e2e4e9;font-weight:700}.dchip .dv{font-weight:700}
-.dchip.crown{background:#f59e0b12;border:1px solid #f59e0b30;color:#fbbf24}
+/* 빈 상태 */
+.empty{text-align:center;padding:60px 20px;color:#64748b}
+.empty-icon{font-size:56px;margin-bottom:16px}
+.empty-text{font-size:15px;line-height:1.8}
+.empty .btn{margin-top:16px}
 
-table{width:100%;border-collapse:collapse;font-size:13px;background:#161a26;border-radius:14px;overflow:hidden;border:1px solid #1e2333}
-thead th{padding:8px 12px;font-weight:600;color:#6b7280;text-align:left;font-size:11px;background:#131620}
-thead th:nth-child(2),thead th:nth-child(3),thead th:nth-child(4),thead th:nth-child(5){text-align:right}
-tbody tr{border-top:1px solid #1a1e2a;transition:background .15s}
-tbody tr:hover{background:#1a1f2e}
-td{padding:8px 12px;vertical-align:top}
-td:nth-child(2),td:nth-child(3),td:nth-child(4),td:nth-child(5){text-align:right;font-variant-numeric:tabular-nums}
-.sn{font-weight:700;color:#e2e4e9}.sr{display:block;font-size:10px;color:#6b7280;margin-top:1px}
-.price{font-weight:600;color:#d1d5db}.up{color:#ef4444}.down{color:#3b82f6}.flat{color:#6b7280}.tv{font-size:12px;color:#9ca3af}
-.badge{display:inline-block;font-size:9px;font-weight:800;padding:2px 6px;border-radius:4px;margin-left:4px;vertical-align:middle}
-.b1{background:#ef444425;color:#f87171}.b2{background:#f59e0b25;color:#fbbf24}.b3{background:#22c55e25;color:#4ade80}.b4{background:#3b82f625;color:#60a5fa}.b5{background:#6b728025;color:#9ca3af}
-.bc{background:#f59e0b20;color:#fbbf24}
-.updated-at{text-align:center;padding:10px;font-size:11px;color:#4b5563}
-.error-msg{background:#ef444420;border:1px solid #ef444440;border-radius:10px;padding:14px;margin:12px 0;color:#f87171;font-size:13px;text-align:center}
+/* 메인 화면: 테마 카드 그리드 */
+.theme-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px}
+.tc{background:#111827;border-radius:12px;padding:16px;cursor:pointer;border:1px solid #1e293b;transition:all .2s}
+.tc:hover{border-color:#334155;transform:translateY(-2px)}
+.tc-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.tc-name{font-size:16px;font-weight:700;color:#f1f5f9}
+.tc-str{font-size:14px;font-weight:700}
+.tc-str.up{color:#ef4444}
+.tc-str.down{color:#3b82f6}
+.tc-str.flat{color:#64748b}
+.tc-list{display:flex;flex-direction:column;gap:6px}
+.tc-row{display:flex;align-items:center;gap:8px}
+.tc-rk{width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff}
+.rk1{background:#ef4444}
+.rk2{background:#f97316}
+.rk3{background:#eab308}
+.rk4{background:#64748b}
+.rk5{background:#475569}
+.tc-sn{font-size:13px;color:#e2e8f0;flex:1}
+.tc-sr{font-size:13px;font-weight:700}
+.tc-sr.up{color:#ef4444}
+.tc-sr.down{color:#3b82f6}
+.tc-sr.flat{color:#64748b}
+.tc-crown{margin-top:8px;padding-top:8px;border-top:1px solid #1e293b;font-size:12px;color:#94a3b8}
+.tc-crown .tcn{color:#fbbf24;font-weight:600}
+.tc-crown .tcv{color:#64748b}
+.tc-empty{color:#475569;font-size:12px;padding:8px 0}
+.tc-arrow{color:#334155;font-size:18px}
 
-@media(max-width:600px){.hd h1{font-size:16px}.theme-grid{grid-template-columns:1fr}table{font-size:11px}td,thead th{padding:6px 8px}.dh-name{font-size:18px}}
+/* 서브 화면 */
+.sub-header{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.sub-header h2{font-size:20px;font-weight:700;color:#f1f5f9}
+.sub-back{cursor:pointer;font-size:24px;color:#64748b}
+.sub-back:hover{color:#e2e8f0}
+
+/* 서브 테이블 */
+.stock-table{width:100%;border-collapse:collapse}
+.stock-table th{text-align:left;padding:10px 12px;font-size:12px;color:#64748b;border-bottom:1px solid #1e293b;position:sticky;top:0;background:#0a0e1a}
+.stock-table td{padding:10px 12px;font-size:13px;border-bottom:1px solid #0f172a}
+.stock-table tr:hover td{background:#111827}
+.sn{font-weight:600;color:#e2e8f0}
+.sc{color:#64748b;font-size:11px}
+.sd{color:#64748b;font-size:11px;margin-top:2px}
+.st-tags{display:flex;gap:3px;flex-wrap:wrap;margin-top:3px}
+.st-tag{font-size:10px;background:#1e3a5f;color:#60a5fa;padding:1px 6px;border-radius:8px}
+.price{text-align:right}
+.rate{text-align:right;font-weight:700}
+.rate.up{color:#ef4444}
+.rate.down{color:#3b82f6}
+.rate.flat{color:#64748b}
+.tv{text-align:right;color:#94a3b8;font-size:12px}
+.rk-badge{display:inline-block;width:20px;height:20px;border-radius:5px;text-align:center;line-height:20px;font-size:10px;font-weight:800;color:#fff;margin-right:6px}
+
+/* 에러 */
+.error-msg{background:#450a0a;color:#fca5a5;padding:12px 16px;border-radius:10px;font-size:13px;margin:10px 0}
+
+@media(max-width:600px){
+  .theme-grid{grid-template-columns:1fr}
+  .header h1{font-size:15px}
+}
 </style>
 </head>
 <body>
-<div class="hd"><h1>📊 테마별 대장주 대시보드</h1><div class="hd-r"><button class="bt" onclick="location.href='themes.html'">📋 종목 관리</button><span id="stB" class="st off">⏸ 대기</span><button class="bt pr" id="rfB" onclick="fetchAll()">🔄 시세 불러오기</button></div></div>
-<div class="search-wrap">
-  <div class="search-box"><span>🔍</span><input type="text" id="searchInput" placeholder="종목명 또는 코드 검색..." oninput="doSearch(this.value)"><button class="bt" onclick="clearSearch()" style="padding:4px 8px;font-size:11px">✕</button></div>
-  <div class="search-results" id="searchResults"></div>
+
+<div class="header">
+  <h1>📊 주식 테마 대시보드</h1>
+  <div class="header-right">
+    <span class="st off" id="stB">⏸ 대기중</span>
+    <button class="btn btn-primary btn-small" id="rfB" onclick="fetchAll()">🔄 시세 불러오기</button>
+    <button class="btn btn-secondary btn-small" onclick="location.href='themes.html'">📋 종목 관리</button>
+  </div>
 </div>
-<div class="pg" id="pgA"><div class="pg-track"><div class="pg-fill" id="pgF"></div></div><div class="pg-txt" id="pgT"></div></div>
-<div class="ct">
+
+<div class="status-bar">
+  <div class="prog-area" id="pgA">
+    <div class="prog-bar"><div class="prog-fill" id="pgF"></div></div>
+    <div class="prog-text" id="pgT"></div>
+  </div>
   <div id="errA"></div>
-  <div id="mainView">
-    <div class="sec-t">🏆 테마 강도 순위 (평균 등락률 기준 자동 정렬)</div>
-    <div class="theme-grid" id="tGrid"></div>
-  </div>
-  <div id="detailView">
-    <button class="detail-back" onclick="showMain()">← 전체 테마로 돌아가기</button>
-    <div id="detailContent"></div>
-  </div>
 </div>
+
+<div class="container">
+  <!-- 검색 -->
+  <div class="search-bar">
+    <span class="search-icon">🔍</span>
+    <input type="text" id="searchInput" placeholder="종목명, 태그로 검색" oninput="renderSearch()">
+  </div>
+
+  <!-- 메인 뷰 -->
+  <div id="mainView"></div>
+
+  <!-- 서브 뷰 -->
+  <div id="subView" style="display:none"></div>
+</div>
+
 <script>
-const RE=['🥇','🥈','🥉','4️⃣','5️⃣'],RC=['r1','r2','r3','r4','r5'],BC=['b1','b2','b3','b4','b5'],RL=['1등','2등','3등','4등','5등'];
-const T=[
-{id:'semi',n:'반도체',ic:'💎',s:[
-{c:'005930',n:'삼성전자',ro:'메모리·파운드리 최대 대장주',p:0,ch:0,r:0,u:null,tv:0},
-{c:'000660',n:'SK하이닉스',ro:'HBM 메모리 시장 선도',p:0,ch:0,r:0,u:null,tv:0},
-{c:'042700',n:'한미반도체',ro:'HBM TC 본더 글로벌 1위',p:0,ch:0,r:0,u:null,tv:0},
-{c:'039030',n:'이오테크닉스',ro:'레이저/첨단 패키징 1위',p:0,ch:0,r:0,u:null,tv:0},
-{c:'067310',n:'하나마이크론',ro:'반도체 패키징(OSAT)',p:0,ch:0,r:0,u:null,tv:0},
-{c:'131970',n:'두산테스나',ro:'웨이퍼/반도체 테스트 1위',p:0,ch:0,r:0,u:null,tv:0},
-{c:'319660',n:'피에스케이',ro:'PR 스트립 세계 1위',p:0,ch:0,r:0,u:null,tv:0},
-{c:'240810',n:'원익IPS',ro:'증착 장비 (삼성 CAPEX)',p:0,ch:0,r:0,u:null,tv:0},
-{c:'036930',n:'주성엔지니어링',ro:'ALD 장비 강자',p:0,ch:0,r:0,u:null,tv:0},
-{c:'095610',n:'테스',ro:'증착/식각 장비',p:0,ch:0,r:0,u:null,tv:0},
-{c:'058470',n:'리노공업',ro:'검사 소켓/핀 독점급',p:0,ch:0,r:0,u:null,tv:0},
-{c:'007660',n:'이수페타시스',ro:'AI서버 MLB 핵심',p:0,ch:0,r:0,u:null,tv:0},
-{c:'222800',n:'심텍',ro:'패키지 기판 전문',p:0,ch:0,r:0,u:null,tv:0},
-{c:'399720',n:'가온칩스',ro:'파운드리 디자인하우스',p:0,ch:0,r:0,u:null,tv:0},
-{c:'080220',n:'제주반도체',ro:'LPDDR 팹리스',p:0,ch:0,r:0,u:null,tv:0}]},
-{id:'hbm',n:'HBM',ic:'🧊',s:[
-{c:'000660',n:'SK하이닉스',ro:'HBM3E 독점 공급',p:0,ch:0,r:0,u:null,tv:0},
-{c:'042700',n:'한미반도체',ro:'TC본더 글로벌 1위',p:0,ch:0,r:0,u:null,tv:0},
-{c:'007660',n:'이수페타시스',ro:'HBM용 MLB 기판',p:0,ch:0,r:0,u:null,tv:0},
-{c:'222800',n:'심텍',ro:'HBM 패키지 기판',p:0,ch:0,r:0,u:null,tv:0},
-{c:'353200',n:'대덕전자',ro:'FC-BGA 기판 수혜',p:0,ch:0,r:0,u:null,tv:0},
-{c:'036930',n:'주성엔지니어링',ro:'HBM ALD 장비',p:0,ch:0,r:0,u:null,tv:0}]},
-{id:'mlcc',n:'MLCC',ic:'⚡',s:[
-{c:'009150',n:'삼성전기',ro:'MLCC 대표 대장주',p:0,ch:0,r:0,u:null,tv:0},
-{c:'011070',n:'LG이노텍',ro:'IT·전장 MLCC',p:0,ch:0,r:0,u:null,tv:0},
-{c:'001820',n:'삼화콘덴서',ro:'MLCC 종합 제조',p:0,ch:0,r:0,u:null,tv:0},
-{c:'353200',n:'대덕전자',ro:'첨단 기판 수혜',p:0,ch:0,r:0,u:null,tv:0},
-{c:'078600',n:'대주전자재료',ro:'MLCC 전극용 소재',p:0,ch:0,r:0,u:null,tv:0},
-{c:'052710',n:'아모텍',ro:'전장/서버 MLCC',p:0,ch:0,r:0,u:null,tv:0},
-{c:'092460',n:'한올반도체',ro:'MLCC 검사 장비',p:0,ch:0,r:0,u:null,tv:0},
-{c:'166480',n:'코칩',ro:'삼성전기 MLCC 유통',p:0,ch:0,r:0,u:null,tv:0}]},
-{id:'ai',n:'AI 인프라',ic:'🧠',s:[
-{c:'003550',n:'LG',ro:'AI 엑사원/DC 수혜',p:0,ch:0,r:0,u:null,tv:0},
-{c:'035420',n:'NAVER',ro:'하이퍼클로바X/AI DC',p:0,ch:0,r:0,u:null,tv:0},
-{c:'017670',n:'SK텔레콤',ro:'AIDC/통신망 선도',p:0,ch:0,r:0,u:null,tv:0},
-{c:'018260',n:'삼성에스디에스',ro:'AI DC/클라우드',p:0,ch:0,r:0,u:null,tv:0},
-{c:'064350',n:'LG씨엔에스',ro:'AI DC 컨설팅/구축',p:0,ch:0,r:0,u:null,tv:0}]},
-{id:'aisw',n:'AI 소프트웨어',ic:'🤖',s:[
-{c:'035420',n:'NAVER',ro:'하이퍼클로바X AI',p:0,ch:0,r:0,u:null,tv:0},
-{c:'035720',n:'카카오',ro:'AI 서비스/플랫폼',p:0,ch:0,r:0,u:null,tv:0},
-{c:'012510',n:'더존비즈온',ro:'AI ERP/핀테크',p:0,ch:0,r:0,u:null,tv:0},
-{c:'304100',n:'솔트룩스',ro:'한국어 LLM 개발',p:0,ch:0,r:0,u:null,tv:0},
-{c:'078340',n:'커넥트웨이브',ro:'AI 커머스 플랫폼',p:0,ch:0,r:0,u:null,tv:0}]},
-{id:'robot',n:'로봇',ic:'🦾',s:[
-{c:'005380',n:'현대차',ro:'보스턴다이내믹스/휴머노이드',p:0,ch:0,r:0,u:null,tv:0},
-{c:'307950',n:'현대오토에버',ro:'로봇 관제/스마트팩토리',p:0,ch:0,r:0,u:null,tv:0},
-{c:'066570',n:'LG전자',ro:'배송/물류 로봇',p:0,ch:0,r:0,u:null,tv:0},
-{c:'277810',n:'레인보우로보틱스',ro:'협동로봇/휴머노이드',p:0,ch:0,r:0,u:null,tv:0},
-{c:'108490',n:'로보티즈',ro:'서비스로봇/감속기',p:0,ch:0,r:0,u:null,tv:0},
-{c:'090360',n:'로보스타',ro:'LG 산업용 로봇',p:0,ch:0,r:0,u:null,tv:0},
-{c:'058610',n:'에스피지',ro:'정밀 감속기 1위',p:0,ch:0,r:0,u:null,tv:0},
-{c:'037230',n:'삼현',ro:'스마트 액추에이터',p:0,ch:0,r:0,u:null,tv:0},
-{c:'454910',n:'두산로보틱스',ro:'협동로봇 점유율1위',p:0,ch:0,r:0,u:null,tv:0}]},
-{id:'auto',n:'자율주행',ic:'🚗',s:[
-{c:'005380',n:'현대차',ro:'자율주행 레벨4 개발',p:0,ch:0,r:0,u:null,tv:0},
-{c:'012330',n:'현대모비스',ro:'자율주행 센서/모듈',p:0,ch:0,r:0,u:null,tv:0},
-{c:'204320',n:'만도',ro:'ADAS/자율주행 부품',p:0,ch:0,r:0,u:null,tv:0},
-{c:'307950',n:'현대오토에버',ro:'자율주행 SW/HD맵',p:0,ch:0,r:0,u:null,tv:0},
-{c:'298040',n:'효성중공업',ro:'자율주행 인프라',p:0,ch:0,r:0,u:null,tv:0}]},
-{id:'power',n:'전력기기,전선',ic:'🔌',s:[
-{c:'010120',n:'LS ELECTRIC',ro:'전력기기 1위',p:0,ch:0,r:0,u:null,tv:0},
-{c:'267260',n:'HD현대일렉트릭',ro:'초고압 변압기',p:0,ch:0,r:0,u:null,tv:0},
-{c:'298040',n:'효성중공업',ro:'변압기/STATCOM',p:0,ch:0,r:0,u:null,tv:0},
-{c:'062040',n:'산일전기',ro:'특수/신재생 변압기',p:0,ch:0,r:0,u:null,tv:0},
-{c:'103590',n:'일진전기',ro:'변압기/전선',p:0,ch:0,r:0,u:null,tv:0},
-{c:'033100',n:'제룡전기',ro:'배전용 변압기 북미1위',p:0,ch:0,r:0,u:null,tv:0},
-{c:'000500',n:'가온전선',ro:'LS 계열 전선',p:0,ch:0,r:0,u:null,tv:0},
-{c:'001440',n:'대한전선',ro:'초고압/해저케이블',p:0,ch:0,r:0,u:null,tv:0},
-{c:'006340',n:'대원전선',ro:'전력선/자동차전선',p:0,ch:0,r:0,u:null,tv:0}]},
-{id:'nuke',n:'원자력(SMR)',ic:'☢️',s:[
-{c:'034020',n:'두산에너빌리티',ro:'원전/SMR 독점급',p:0,ch:0,r:0,u:null,tv:0},
-{c:'000720',n:'현대건설',ro:'원전시공1위/SMR',p:0,ch:0,r:0,u:null,tv:0},
-{c:'047040',n:'대우건설',ro:'체코 K-원전',p:0,ch:0,r:0,u:null,tv:0},
-{c:'375500',n:'DL이앤씨',ro:'X-Energy SMR',p:0,ch:0,r:0,u:null,tv:0},
-{c:'006360',n:'GS건설',ro:'원자력사업단',p:0,ch:0,r:0,u:null,tv:0},
-{c:'052690',n:'한전기술',ro:'원전 설계 1위',p:0,ch:0,r:0,u:null,tv:0},
-{c:'083650',n:'비에이치아이',ro:'원전 BOP',p:0,ch:0,r:0,u:null,tv:0},
-{c:'010050',n:'우진',ro:'원자로 계측 독점',p:0,ch:0,r:0,u:null,tv:0},
-{c:'044490',n:'태웅',ro:'원전 단조 부품',p:0,ch:0,r:0,u:null,tv:0},
-{c:'032820',n:'우리기술',ro:'원전 DCS 국산화',p:0,ch:0,r:0,u:null,tv:0}]},
-{id:'solar',n:'태양광,풍력',ic:'☀️',s:[
-{c:'009830',n:'한화솔루션',ro:'태양광 모듈 1위',p:0,ch:0,r:0,u:null,tv:0},
-{c:'322000',n:'HD현대에너지솔루션',ro:'태양광 셀/모듈',p:0,ch:0,r:0,u:null,tv:0},
-{c:'010060',n:'OCI홀딩스',ro:'폴리실리콘 글로벌',p:0,ch:0,r:0,u:null,tv:0},
-{c:'112610',n:'씨에스윈드',ro:'풍력 타워 1위',p:0,ch:0,r:0,u:null,tv:0},
-{c:'336260',n:'두산퓨얼셀',ro:'수소 연료전지 1위',p:0,ch:0,r:0,u:null,tv:0}]},
-{id:'batt',n:'2차전지',ic:'🔋',s:[
-{c:'006400',n:'삼성SDI',ro:'전고체 배터리 선도',p:0,ch:0,r:0,u:null,tv:0},
-{c:'086520',n:'에코프로',ro:'양극재 밸류체인',p:0,ch:0,r:0,u:null,tv:0},
-{c:'247540',n:'에코프로비엠',ro:'하이니켈 양극재1위',p:0,ch:0,r:0,u:null,tv:0},
-{c:'373220',n:'LG에너지솔루션',ro:'국내1위 배터리셀',p:0,ch:0,r:0,u:null,tv:0},
-{c:'003670',n:'포스코퓨처엠',ro:'양극재+음극재',p:0,ch:0,r:0,u:null,tv:0},
-{c:'066970',n:'엘앤에프',ro:'테슬라 양극재',p:0,ch:0,r:0,u:null,tv:0},
-{c:'093370',n:'후성',ro:'전해질/특수가스',p:0,ch:0,r:0,u:null,tv:0}]},
-{id:'game',n:'게임',ic:'🎮',s:[
-{c:'259960',n:'크래프톤',ro:'배그 개발사',p:0,ch:0,r:0,u:null,tv:0},
-{c:'251270',n:'넷마블',ro:'모바일게임 대장주',p:0,ch:0,r:0,u:null,tv:0},
-{c:'036570',n:'엔씨소프트',ro:'리니지 시리즈',p:0,ch:0,r:0,u:null,tv:0},
-{c:'293490',n:'카카오게임즈',ro:'카카오 게임 자회사',p:0,ch:0,r:0,u:null,tv:0},
-{c:'263750',n:'펄어비스',ro:'검은사막 개발사',p:0,ch:0,r:0,u:null,tv:0},
-{c:'112040',n:'위메이드',ro:'미르4/위믹스',p:0,ch:0,r:0,u:null,tv:0}]},
-{id:'enter',n:'엔터/미디어',ic:'🎬',s:[
-{c:'352820',n:'HYBE',ro:'BTS 소속사',p:0,ch:0,r:0,u:null,tv:0},
-{c:'041510',n:'SM',ro:'K-POP 대형기획사',p:0,ch:0,r:0,u:null,tv:0},
-{c:'035900',n:'JYP Ent',ro:'트와이스/스트레이키즈',p:0,ch:0,r:0,u:null,tv:0},
-{c:'122870',n:'YG Ent',ro:'블랙핑크 소속사',p:0,ch:0,r:0,u:null,tv:0},
-{c:'060300',n:'CJ대한통운',ro:'CJ 물류 대장주',p:0,ch:0,r:0,u:null,tv:0}]},
-{id:'food',n:'음식료',ic:'🍜',s:[
-{c:'097950',n:'CJ제일제당',ro:'식품 대장주',p:0,ch:0,r:0,u:null,tv:0},
-{c:'271560',n:'오리온',ro:'글로벌 제과',p:0,ch:0,r:0,u:null,tv:0},
-{c:'004370',n:'농심',ro:'라면/스낵 대표',p:0,ch:0,r:0,u:null,tv:0},
-{c:'003230',n:'삼양식품',ro:'불닭볶음면 글로벌',p:0,ch:0,r:0,u:null,tv:0},
-{c:'280360',n:'롯데웰푸드',ro:'롯데 식품 계열',p:0,ch:0,r:0,u:null,tv:0}]},
-{id:'steel',n:'철강',ic:'🏗️',s:[
-{c:'005490',n:'포스코홀딩스',ro:'철강 1위 지주사',p:0,ch:0,r:0,u:null,tv:0},
-{c:'004020',n:'현대제철',ro:'현대차그룹 철강',p:0,ch:0,r:0,u:null,tv:0},
-{c:'001230',n:'동국제강',ro:'후판/철강 전문',p:0,ch:0,r:0,u:null,tv:0},
-{c:'058430',n:'포스코스틸리온',ro:'냉연/도금 강판',p:0,ch:0,r:0,u:null,tv:0}]},
-{id:'medical',n:'의료기기/제약',ic:'💊',s:[
-{c:'000100',n:'유한양행',ro:'제약 대장주',p:0,ch:0,r:0,u:null,tv:0},
-{c:'185750',n:'종근당',ro:'전문의약품 대표',p:0,ch:0,r:0,u:null,tv:0},
-{c:'069620',n:'대웅제약',ro:'나보타/제약 강자',p:0,ch:0,r:0,u:null,tv:0},
-{c:'006280',n:'녹십자',ro:'혈액제제/백신',p:0,ch:0,r:0,u:null,tv:0},
-{c:'041830',n:'인바디',ro:'체성분분석기 1위',p:0,ch:0,r:0,u:null,tv:0}]},
-{id:'telco',n:'통신',ic:'📡',s:[
-{c:'017670',n:'SK텔레콤',ro:'이동통신 1위',p:0,ch:0,r:0,u:null,tv:0},
-{c:'030200',n:'KT',ro:'유무선 통합 통신',p:0,ch:0,r:0,u:null,tv:0},
-{c:'032640',n:'LG유플러스',ro:'5G/IPTV 강자',p:0,ch:0,r:0,u:null,tv:0}]},
-{id:'insure',n:'보험',ic:'🛡️',s:[
-{c:'000810',n:'삼성화재',ro:'손해보험 1위',p:0,ch:0,r:0,u:null,tv:0},
-{c:'005830',n:'DB손해보험',ro:'자동차보험 강자',p:0,ch:0,r:0,u:null,tv:0},
-{c:'001450',n:'현대해상',ro:'손해보험 대표',p:0,ch:0,r:0,u:null,tv:0},
-{c:'032830',n:'삼성생명',ro:'생명보험 1위',p:0,ch:0,r:0,u:null,tv:0}]},
-{id:'oil',n:'유가,석유',ic:'🛢️',s:[
-{c:'024060',n:'흥구석유',ro:'유가 상승 테마주',p:0,ch:0,r:0,u:null,tv:0},
-{c:'010950',n:'S-Oil',ro:'정유 대장주',p:0,ch:0,r:0,u:null,tv:0},
-{c:'096770',n:'SK이노베이션',ro:'정유1위/SK온',p:0,ch:0,r:0,u:null,tv:0},
-{c:'047050',n:'포스코인터내셔널',ro:'자원개발/종합상사',p:0,ch:0,r:0,u:null,tv:0}]},
-{id:'space',n:'우주항공',ic:'🚀',s:[
-{c:'099320',n:'쎄트렉아이',ro:'인공위성 유일',p:0,ch:0,r:0,u:null,tv:0},
-{c:'189300',n:'인텔리안테크',ro:'위성안테나 1위',p:0,ch:0,r:0,u:null,tv:0},
-{c:'218410',n:'RFHIC',ro:'GaN 트랜지스터',p:0,ch:0,r:0,u:null,tv:0}]},
-{id:'optic',n:'광통신,양자',ic:'🔬',s:[
-{c:'010170',n:'대한광통신',ro:'광섬유 자체생산',p:0,ch:0,r:0,u:null,tv:0},
-{c:'032500',n:'케이엠더블유',ro:'5G/6G 안테나',p:0,ch:0,r:0,u:null,tv:0},
-{c:'050890',n:'쏠리드',ro:'중계기(DAS)',p:0,ch:0,r:0,u:null,tv:0},
-{c:'115440',n:'우리넷',ro:'QKD/광전송장비',p:0,ch:0,r:0,u:null,tv:0}]},
-{id:'coin',n:'스테이블코인',ic:'🪙',s:[
-{c:'377300',n:'카카오페이',ro:'결제 대장주',p:0,ch:0,r:0,u:null,tv:0},
-{c:'258830',n:'쿠콘',ro:'금융API/블록체인',p:0,ch:0,r:0,u:null,tv:0},
-{c:'064260',n:'다날',ro:'암호화폐 결제',p:0,ch:0,r:0,u:null,tv:0}]},
-{id:'fin',n:'금융지주,증권',ic:'🏦',s:[
-{c:'055550',n:'신한지주',ro:'4대 금융지주',p:0,ch:0,r:0,u:null,tv:0},
-{c:'086790',n:'하나금융지주',ro:'4대 금융지주',p:0,ch:0,r:0,u:null,tv:0},
-{c:'105560',n:'KB금융',ro:'시총1위 금융지주',p:0,ch:0,r:0,u:null,tv:0},
-{c:'316140',n:'우리금융지주',ro:'우리은행 중심',p:0,ch:0,r:0,u:null,tv:0},
-{c:'039490',n:'키움증권',ro:'리테일 1위',p:0,ch:0,r:0,u:null,tv:0},
-{c:'006800',n:'미래에셋증권',ro:'자본규모1위 IB',p:0,ch:0,r:0,u:null,tv:0}]},
-{id:'def',n:'방산',ic:'🎖️',s:[
-{c:'012450',n:'한화에어로스페이스',ro:'방산 최대',p:0,ch:0,r:0,u:null,tv:0},
-{c:'079550',n:'LIG넥스원',ro:'유도무기/레이더',p:0,ch:0,r:0,u:null,tv:0},
-{c:'064350',n:'현대로템',ro:'K2 전차/철도',p:0,ch:0,r:0,u:null,tv:0},
-{c:'272210',n:'한화시스템',ro:'방산전자/ICT',p:0,ch:0,r:0,u:null,tv:0},
-{c:'103140',n:'풍산',ro:'탄약독점/동합금',p:0,ch:0,r:0,u:null,tv:0}]},
-{id:'ship',n:'조선',ic:'🚢',s:[
-{c:'042660',n:'한화오션',ro:'LNG선/특수선',p:0,ch:0,r:0,u:null,tv:0},
-{c:'010140',n:'삼성중공업',ro:'LNG선/FLNG',p:0,ch:0,r:0,u:null,tv:0},
-{c:'329180',n:'HD현대중공업',ro:'세계최대 조선',p:0,ch:0,r:0,u:null,tv:0},
-{c:'009540',n:'HD한국조선해양',ro:'HD현대 조선지주',p:0,ch:0,r:0,u:null,tv:0},
-{c:'082740',n:'한화엔진',ro:'선박 엔진 전문',p:0,ch:0,r:0,u:null,tv:0},
-{c:'017960',n:'한국카본',ro:'LNG 보온재 독과점',p:0,ch:0,r:0,u:null,tv:0}]},
-{id:'bio',n:'바이오',ic:'🧬',s:[
-{c:'207940',n:'삼성바이오로직스',ro:'CDMO 글로벌1위',p:0,ch:0,r:0,u:null,tv:0},
-{c:'196170',n:'알테오젠',ro:'SC전환 플랫폼',p:0,ch:0,r:0,u:null,tv:0},
-{c:'128940',n:'한미약품',ro:'신약 기술수출',p:0,ch:0,r:0,u:null,tv:0},
-{c:'068270',n:'셀트리온',ro:'바이오시밀러',p:0,ch:0,r:0,u:null,tv:0},
-{c:'141080',n:'리가켐바이오',ro:'ADC 신약개발',p:0,ch:0,r:0,u:null,tv:0}]},
-{id:'beauty',n:'뷰티(화장품)',ic:'💄',s:[
-{c:'278470',n:'에이피알',ro:'메디큐브/K-뷰티',p:0,ch:0,r:0,u:null,tv:0},
-{c:'192820',n:'코스맥스',ro:'ODM/OEM 1위',p:0,ch:0,r:0,u:null,tv:0},
-{c:'161890',n:'한국콜마',ro:'화장품 ODM 원조',p:0,ch:0,r:0,u:null,tv:0},
-{c:'257720',n:'실리콘투',ro:'K-뷰티 이커머스',p:0,ch:0,r:0,u:null,tv:0}]},
-{id:'construct',n:'건설',ic:'🏢',s:[
-{c:'000720',n:'현대건설',ro:'건설 대장주',p:0,ch:0,r:0,u:null,tv:0},
-{c:'047040',n:'대우건설',ro:'토목/건축 강자',p:0,ch:0,r:0,u:null,tv:0},
-{c:'375500',n:'DL이앤씨',ro:'DL건설 계열',p:0,ch:0,r:0,u:null,tv:0},
-{c:'006360',n:'GS건설',ro:'자이 아파트',p:0,ch:0,r:0,u:null,tv:0},
-{c:'009830',n:'한화솔루션',ro:'한화건설 계열',p:0,ch:0,r:0,u:null,tv:0}]},
-{id:'nk',n:'남북주',ic:'🕊️',s:[
-{c:'033340',n:'좋은사람들',ro:'개성공단 속옷',p:0,ch:0,r:0,u:null,tv:0},
-{c:'025980',n:'아난티',ro:'금강산 리조트',p:0,ch:0,r:0,u:null,tv:0},
-{c:'017800',n:'현대엘리베이터',ro:'현대아산 최대주주',p:0,ch:0,r:0,u:null,tv:0},
-{c:'025860',n:'남해화학',ro:'비료1위/대북수혜',p:0,ch:0,r:0,u:null,tv:0}]}
-];
+// ─── 데이터 ───
+const STORAGE_KEY = 'stock-dashboard-data';
+let liveData = {}; // code -> {price, change, rate, up, tradingValue, ...}
+let currentView = 'main'; // main | sub
+let currentThemeIdx = -1;
 
-let rTimer=null,total=0,fetched=false;
-function fTV(v){if(!v)return'-';if(v>=1e12)return(v/1e12).toFixed(1)+'조';if(v>=1e8)return(v/1e8).toFixed(0)+'억';return'-';}
-function isU(s){return s.u===true;}
-function top5(t){return t.s.filter(s=>isU(s)&&s.r>0).sort((a,b)=>b.r-a.r).slice(0,5);}
-function tvTop(t){const sorted=[...t.s].sort((a,b)=>(b.tv||0)-(a.tv||0));return sorted[0]&&sorted[0].tv>0?sorted[0]:null;}
-function themeStr(t){const ups=t.s.filter(s=>isU(s)&&s.r>0);if(!ups.length)return 0;return ups.reduce((a,b)=>a+b.r,0)/ups.length;}
-function strCls(v){if(v>=5)return'hot';if(v>=2)return'warm';if(v>0)return'cool';return'cold';}
-
-// SEARCH
-function doSearch(q){
-  const el=document.getElementById('searchResults');
-  if(!q||q.length<1){el.classList.remove('show');return;}
-  q=q.toLowerCase();
-  let results=[];
-  T.forEach(t=>{t.s.forEach(s=>{
-    if(s.n.toLowerCase().includes(q)||s.c.includes(q)||s.ro.toLowerCase().includes(q)){
-      results.push({...s,theme:t.n,themeId:t.id,themeIdx:T.indexOf(t)});
-    }
-  });});
-  const seen=new Set();results=results.filter(r=>{if(seen.has(r.c+r.themeId))return false;seen.add(r.c+r.themeId);return true;});
-  if(!results.length){el.innerHTML='<div class="sr-item"><span style="color:#6b7280">검색 결과 없음</span></div>';el.classList.add('show');return;}
-  let h='';results.slice(0,10).forEach(r=>{
-    const cls=isU(r)?'up':r.u===false?'down':'flat';
-    const sg=isU(r)?'+':r.u===false?'-':'';
-    h+=`<div class="sr-item" onclick="showDetail(${r.themeIdx});clearSearch()"><div><span class="sri-name">${r.n}</span> <span class="sri-theme">${r.theme} · ${r.c}</span></div><span class="${cls}">${r.p?r.p.toLocaleString():'-'} ${r.r?sg+Math.abs(r.r).toFixed(2)+'%':''}</span></div>`;
-  });
-  el.innerHTML=h;el.classList.add('show');
-}
-function clearSearch(){document.getElementById('searchInput').value='';document.getElementById('searchResults').classList.remove('show');}
-
-function showMain(){document.getElementById('mainView').style.display='block';document.getElementById('detailView').style.display='none';window.scrollTo(0,0);}
-function showDetail(idx){
-  const t=T[idx];
-  document.getElementById('mainView').style.display='none';
-  document.getElementById('detailView').style.display='block';
-  const t5=top5(t),tv=tvTop(t),t5c=t5.map(s=>s.c),tvc=tv?tv.c:null;
-  const str=themeStr(t);
-  let h=`<div class="detail-header"><div class="dh-top"><span class="dh-icon">${t.ic}</span><span class="dh-name">${t.n}</span><span class="dh-str ${strCls(str)}">${str>0?'+':''}${str.toFixed(2)}%</span></div>`;
-  h+=`<div class="dh-chips">`;
-  t5.forEach((s,i)=>{h+=`<div class="dchip"><div class="dr ${RC[i]}">${i+1}</div><span class="dn">${s.n}</span><span class="dv up">+${s.r.toFixed(2)}%</span></div>`;});
-  if(tv)h+=`<div class="dchip crown">👑 <span class="dn">${tv.n}</span><span class="dv">${fTV(tv.tv)}</span></div>`;
-  h+=`</div></div>`;
-  const sorted=[...t.s].sort((a,b)=>{if(isU(a)&&!isU(b))return-1;if(!isU(a)&&isU(b))return 1;if(isU(a)&&isU(b))return b.r-a.r;return a.r-b.r;});
-  h+=`<table><thead><tr><th>종목명</th><th>현재가</th><th>전일비</th><th>등락률</th><th>거래대금</th></tr></thead><tbody>`;
-  sorted.forEach(s=>{
-    const ar=isU(s)?'▲':s.u===false?'▼':'-';const cl=isU(s)?'up':s.u===false?'down':'flat';const sg=isU(s)?'+':s.u===false?'-':'';
-    let bd='';const ri=t5c.indexOf(s.c);
-    if(ri>=0)bd+=`<span class="badge ${BC[ri]}">${RE[ri]} ${RL[ri]}</span>`;
-    if(tvc&&s.c===tvc)bd+=`<span class="badge bc">👑 대장주</span>`;
-    h+=`<tr><td><span class="sn">${s.n}${bd}</span><span class="sr">${s.ro}</span></td><td class="price">${s.p?s.p.toLocaleString():'-'}</td><td class="${cl}">${s.p?ar+' '+Math.abs(s.ch).toLocaleString():'-'}</td><td class="${cl}">${s.p?sg+Math.abs(s.r).toFixed(2)+'%':'-'}</td><td class="tv">${fTV(s.tv)}</td></tr>`;
-  });
-  h+=`</tbody></table>`;
-  if(!fetched)h+=`<div class="updated-at">🔄 시세 불러오기를 눌러 실시간 데이터를 가져오세요</div>`;
-  document.getElementById('detailContent').innerHTML=h;
-  window.scrollTo(0,0);
+function loadData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch(e) {}
+  return { themes: [], version: 1 };
 }
 
-function renderMain(){
-  const sorted=[...T.map((t,i)=>({t,i,str:themeStr(t)}))].sort((a,b)=>b.str-a.str);
-  let h='';
-  sorted.forEach(({t,i,str})=>{
-    const t5=top5(t),tv=tvTop(t);
-    h+=`<div class="tc" onclick="showDetail(${i})"><div class="tc-head"><span class="tc-name">${t.ic} ${t.n}</span><span class="tc-str ${strCls(str)}">${str>0?'+':''}${str.toFixed(2)}%</span></div><div class="tc-list">`;
-    if(t5.length){t5.forEach((s,j)=>{h+=`<div class="tc-row"><div class="tc-rk ${RC[j]}">${j+1}</div><span class="tc-sn">${s.n}</span><span class="tc-sr up">+${s.r.toFixed(2)}%</span></div>`;});}
-    else{h+=`<div class="tc-empty">상승 종목 없음 (시세 불러오기 필요)</div>`;}
-    if(tv)h+=`<div class="tc-crown">👑 거래대금 <span class="tcn">${tv.n}</span> <span class="tcv">${fTV(tv.tv)}</span></div>`;
-    h+=`</div><span class="tc-arrow">→</span></div>`;
-  });
-  document.getElementById('tGrid').innerHTML=h;
+// ─── 포맷 유틸 ───
+function fPrice(v) { return v ? v.toLocaleString() + '원' : '-'; }
+function fRate(v) { 
+  if (v === null || v === undefined) return '-';
+  const sign = v > 0 ? '+' : '';
+  return sign + v.toFixed(2) + '%';
+}
+function fTV(v) {
+  if (!v) return '-';
+  if (v >= 1000000000000) return (v/1000000000000).toFixed(1) + '조';
+  if (v >= 100000000) return (v/100000000).toFixed(0) + '억';
+  if (v >= 10000) return (v/10000).toFixed(0) + '만';
+  return v.toLocaleString();
 }
 
-async function fetchAll(){
-  const btn=document.getElementById('rfB'),bg=document.getElementById('stB');
-  const pa=document.getElementById('pgA'),pf=document.getElementById('pgF'),pt=document.getElementById('pgT');
-  const allCodes=new Set();T.forEach(t=>t.s.forEach(s=>allCodes.add(s.c)));
-  const codeMap={};
-  btn.disabled=true;btn.textContent='⏳ 불러오는 중...';bg.className='st ld';bg.textContent='⏳ 수신중';pa.style.display='block';
-  let d=0,ok=0;const totalC=allCodes.size;
-  for(const code of allCodes){
-    try{
-      const res=await fetch('/api/stock?code='+code);const data=await res.json();
-      if(data.success){codeMap[code]=data;ok++;}
-    }catch(e){}
-    d++;pf.style.width=Math.round(d/totalC*100)+'%';pt.textContent=`${d}/${totalC} 종목 (성공:${ok})`;
-    await new Promise(r=>setTimeout(r,55));
+const RC = ['rk1','rk2','rk3','rk4','rk5'];
+
+// ─── 메인 렌더 ───
+function renderMain() {
+  const data = loadData();
+  const mainView = document.getElementById('mainView');
+  const subView = document.getElementById('subView');
+  mainView.style.display = 'block';
+  subView.style.display = 'none';
+  currentView = 'main';
+
+  if (data.themes.length === 0) {
+    mainView.innerHTML = `
+      <div class="empty">
+        <div class="empty-icon">📁</div>
+        <div class="empty-text">
+          아직 등록된 테마가 없어요!<br>
+          "종목 관리" 페이지에서 테마와 종목을 추가하면<br>
+          여기에 대시보드가 나타납니다.
+        </div>
+        <button class="btn btn-primary" onclick="location.href='themes.html'" style="margin-top:16px">📋 종목 관리로 이동</button>
+      </div>`;
+    return;
   }
-  T.forEach(t=>{t.s.forEach(s=>{
-    const d=codeMap[s.c];
-    if(d){s.p=d.price;s.ch=d.change;s.r=d.rate;s.u=d.up;s.tv=d.tradingValue||0;}
-  });});
-  fetched=true;
-  renderMain();
-  const ts=new Date().toLocaleString('ko-KR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-  if(ok===0){document.getElementById('errA').innerHTML='<div class="error-msg">❌ API 연결 실패</div>';bg.className='st off';bg.textContent='❌ 실패';}
-  else{bg.className='st on';bg.textContent=`🟢 실시간 · ${ts}`;}
-  btn.disabled=false;btn.textContent='🔄 시세 불러오기';setTimeout(()=>{pa.style.display='none';},2000);
+
+  // 테마별 데이터 계산 (실시간 데이터 결합)
+  const themeCards = data.themes.map((theme, ti) => {
+    const stocks = theme.stocks.map(s => {
+      const live = s.code ? liveData[s.code] : null;
+      return {
+        ...s,
+        price: live ? live.price : 0,
+        change: live ? live.change : 0,
+        rate: live ? live.rate : 0,
+        up: live ? live.up : null,
+        tradingValue: live ? live.tradingValue : 0
+      };
+    });
+
+    // 상승 종목 TOP5
+    const top5 = stocks
+      .filter(s => s.rate > 0)
+      .sort((a, b) => b.rate - a.rate)
+      .slice(0, 5);
+
+    // 거래대금 대장주
+    const tvKing = stocks.filter(s => s.tradingValue > 0)
+      .sort((a, b) => b.tradingValue - a.tradingValue)[0] || null;
+
+    // 평균 등락률 (테마 강도)
+    const ratesWithData = stocks.filter(s => s.rate !== 0);
+    const avgRate = ratesWithData.length > 0
+      ? ratesWithData.reduce((s, st) => s + st.rate, 0) / ratesWithData.length
+      : 0;
+
+    return { theme, ti, stocks, top5, tvKing, avgRate };
+  });
+
+  // 테마 강도 순 정렬 (평균 등락률이 높은 테마가 위로)
+  themeCards.sort((a, b) => b.avgRate - a.avgRate);
+
+  let html = '<div class="theme-grid">';
+  themeCards.forEach(({ theme, ti, top5, tvKing, avgRate }) => {
+    const rateClass = avgRate > 0 ? 'up' : avgRate < 0 ? 'down' : 'flat';
+    const rateStr = avgRate !== 0 ? (avgRate > 0 ? '+' : '') + avgRate.toFixed(2) + '%' : '-';
+
+    html += `<div class="tc" onclick="openSub(${ti})">
+      <div class="tc-head">
+        <span class="tc-name">${theme.name}</span>
+        <span class="tc-str ${rateClass}">${rateStr}</span>
+      </div>
+      <div class="tc-list">`;
+
+    if (top5.length > 0) {
+      top5.forEach((s, j) => {
+        html += `<div class="tc-row">
+          <div class="tc-rk ${RC[j]}">${j+1}</div>
+          <span class="tc-sn">${s.name}</span>
+          <span class="tc-sr up">+${s.rate.toFixed(2)}%</span>
+        </div>`;
+      });
+    } else {
+      html += `<div class="tc-empty">시세를 불러오면 상승 TOP5가 표시됩니다</div>`;
+    }
+
+    if (tvKing) {
+      html += `<div class="tc-crown">👑 거래대금 <span class="tcn">${tvKing.name}</span> <span class="tcv">${fTV(tvKing.tradingValue)}</span></div>`;
+    }
+
+    html += `</div>
+      <div style="text-align:right;margin-top:8px">
+        <span style="color:#334155;font-size:12px">${theme.stocks.length}종목 →</span>
+      </div>
+    </div>`;
+  });
+  html += '</div>';
+  mainView.innerHTML = html;
 }
 
-T.forEach(t=>total+=t.s.length);
+// ─── 서브 렌더 (테마 상세) ───
+function openSub(ti) {
+  currentView = 'sub';
+  currentThemeIdx = ti;
+  const data = loadData();
+  const theme = data.themes[ti];
+  const mainView = document.getElementById('mainView');
+  const subView = document.getElementById('subView');
+  mainView.style.display = 'none';
+  subView.style.display = 'block';
+
+  // 종목에 실시간 데이터 결합
+  const stocks = theme.stocks.map(s => {
+    const live = s.code ? liveData[s.code] : null;
+    return {
+      ...s,
+      price: live ? live.price : 0,
+      change: live ? live.change : 0,
+      rate: live ? live.rate : 0,
+      up: live ? live.up : null,
+      tradingValue: live ? live.tradingValue : 0
+    };
+  });
+
+  // 등락률 순 정렬
+  stocks.sort((a, b) => b.rate - a.rate);
+
+  let html = `
+    <div class="sub-header">
+      <span class="sub-back" onclick="renderMain()">← </span>
+      <h2>${theme.name}</h2>
+      <span style="color:#64748b;font-size:14px">${stocks.length}종목</span>
+    </div>
+    <div style="overflow-x:auto">
+    <table class="stock-table">
+      <thead>
+        <tr>
+          <th style="width:30px">#</th>
+          <th>종목</th>
+          <th class="price">현재가</th>
+          <th class="rate">등락률</th>
+          <th class="tv">거래대금</th>
+        </tr>
+      </thead>
+      <tbody>`;
+
+  stocks.forEach((s, i) => {
+    const rateClass = s.rate > 0 ? 'up' : s.rate < 0 ? 'down' : 'flat';
+    const rankBg = i < 5 ? RC[i] : '';
+    html += `<tr>
+      <td>${i < 5 ? `<span class="rk-badge ${rankBg}">${i+1}</span>` : `<span style="color:#475569">${i+1}</span>`}</td>
+      <td>
+        <div class="sn">${s.name} ${s.code ? `<span class="sc">${s.code}</span>` : ''}</div>
+        ${s.desc ? `<div class="sd">${s.desc}</div>` : ''}
+        ${s.tags && s.tags.length ? `<div class="st-tags">${s.tags.map(t => `<span class="st-tag">#${t}</span>`).join('')}</div>` : ''}
+      </td>
+      <td class="price">${s.price ? fPrice(s.price) : '-'}</td>
+      <td class="rate ${rateClass}">${s.rate ? fRate(s.rate) : '-'}</td>
+      <td class="tv">${s.tradingValue ? fTV(s.tradingValue) : '-'}</td>
+    </tr>`;
+  });
+
+  html += `</tbody></table></div>`;
+  subView.innerHTML = html;
+}
+
+// ─── 검색 ───
+function renderSearch() {
+  const query = document.getElementById('searchInput').value.toLowerCase().trim();
+  if (!query) {
+    if (currentView === 'main') renderMain();
+    return;
+  }
+
+  const data = loadData();
+  const results = [];
+  data.themes.forEach(theme => {
+    theme.stocks.forEach(s => {
+      const matchName = s.name.toLowerCase().includes(query);
+      const matchCode = s.code && s.code.includes(query);
+      const matchTag = s.tags && s.tags.some(t => t.toLowerCase().includes(query));
+      if (matchName || matchCode || matchTag) {
+        const live = s.code ? liveData[s.code] : null;
+        results.push({
+          ...s, theme: theme.name,
+          price: live ? live.price : 0,
+          rate: live ? live.rate : 0,
+          up: live ? live.up : null,
+          tradingValue: live ? live.tradingValue : 0
+        });
+      }
+    });
+  });
+
+  const mainView = document.getElementById('mainView');
+  document.getElementById('subView').style.display = 'none';
+  mainView.style.display = 'block';
+
+  if (results.length === 0) {
+    mainView.innerHTML = `<div class="empty"><div class="empty-icon">🔍</div><div class="empty-text">"${query}" 검색 결과가 없습니다</div></div>`;
+    return;
+  }
+
+  let html = `<div style="margin-bottom:12px;color:#94a3b8;font-size:13px">"${query}" 검색결과 ${results.length}건</div>
+    <table class="stock-table"><thead><tr>
+      <th>종목</th><th>테마</th><th class="price">현재가</th><th class="rate">등락률</th>
+    </tr></thead><tbody>`;
+  results.forEach(s => {
+    const rateClass = s.rate > 0 ? 'up' : s.rate < 0 ? 'down' : 'flat';
+    html += `<tr>
+      <td><span class="sn">${s.name}</span> ${s.code ? `<span class="sc">${s.code}</span>` : ''}</td>
+      <td><span style="color:#60a5fa;font-size:12px">#${s.theme}</span></td>
+      <td class="price">${s.price ? fPrice(s.price) : '-'}</td>
+      <td class="rate ${rateClass}">${s.rate ? fRate(s.rate) : '-'}</td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  mainView.innerHTML = html;
+}
+
+// ─── 시세 불러오기 (한국투자증권 API) ───
+async function fetchAll() {
+  const data = loadData();
+  const btn = document.getElementById('rfB');
+  const bg = document.getElementById('stB');
+  const pa = document.getElementById('pgA');
+  const pf = document.getElementById('pgF');
+  const pt = document.getElementById('pgT');
+
+  // 모든 종목코드 수집 (중복 제거)
+  const allCodes = new Set();
+  data.themes.forEach(t => t.stocks.forEach(s => { if (s.code) allCodes.add(s.code); }));
+
+  if (allCodes.size === 0) {
+    document.getElementById('errA').innerHTML = '<div class="error-msg">⚠️ 종목코드가 입력된 종목이 없어요. "종목 관리"에서 6자리 종목코드를 넣어주세요.</div>';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = '⏳ 불러오는 중...';
+  bg.className = 'st ld';
+  bg.textContent = '⏳ 수신중';
+  pa.style.display = 'block';
+  document.getElementById('errA').innerHTML = '';
+
+  let done = 0, ok = 0;
+  const total = allCodes.size;
+
+  for (const code of allCodes) {
+    try {
+      const res = await fetch('/api/stock?code=' + code);
+      const d = await res.json();
+      if (d.success) {
+        liveData[code] = d;
+        ok++;
+      }
+    } catch(e) {}
+    done++;
+    pf.style.width = Math.round(done / total * 100) + '%';
+    pt.textContent = `${done}/${total} 종목 (성공:${ok})`;
+    await new Promise(r => setTimeout(r, 55));
+  }
+
+  // 렌더 갱신
+  if (currentView === 'main') renderMain();
+  else if (currentView === 'sub') openSub(currentThemeIdx);
+
+  const ts = new Date().toLocaleString('ko-KR', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+  if (ok === 0) {
+    document.getElementById('errA').innerHTML = '<div class="error-msg">❌ API 연결 실패. Vercel 환경변수(KIS_APPKEY, KIS_APPSECRET)를 확인하세요.</div>';
+    bg.className = 'st off';
+    bg.textContent = '❌ 실패';
+  } else {
+    bg.className = 'st on';
+    bg.textContent = `🟢 실시간 · ${ts}`;
+  }
+  btn.disabled = false;
+  btn.textContent = '🔄 시세 불러오기';
+  setTimeout(() => { pa.style.display = 'none'; }, 2000);
+}
+
+// ─── 초기 렌더 ───
 renderMain();
 </script>
 </body>
