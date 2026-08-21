@@ -88,7 +88,7 @@ td:nth-child(2),td:nth-child(3),td:nth-child(4),td:nth-child(5){text-align:right
 </style>
 </head>
 <body>
-<div class="hd"><h1>📊 테마별 대장주 대시보드</h1><div class="hd-r"><span id="stB" class="st off">⏸ 대기</span><button class="bt pr" id="rfB" onclick="fetchAll()">🔄 시세 불러오기</button></div></div>
+<div class="hd"><h1>📊 테마별 대장주 대시보드</h1><div class="hd-r"><button class="bt" onclick="location.href='themes.html'">📋 종목 관리</button><span id="stB" class="st off">⏸ 대기</span><button class="bt pr" id="rfB" onclick="fetchAll()">🔄 시세 불러오기</button></div></div>
 <div class="search-wrap">
   <div class="search-box"><span>🔍</span><input type="text" id="searchInput" placeholder="종목명 또는 코드 검색..." oninput="doSearch(this.value)"><button class="bt" onclick="clearSearch()" style="padding:4px 8px;font-size:11px">✕</button></div>
   <div class="search-results" id="searchResults"></div>
@@ -323,7 +323,6 @@ function doSearch(q){
       results.push({...s,theme:t.n,themeId:t.id,themeIdx:T.indexOf(t)});
     }
   });});
-  // deduplicate by code
   const seen=new Set();results=results.filter(r=>{if(seen.has(r.c+r.themeId))return false;seen.add(r.c+r.themeId);return true;});
   if(!results.length){el.innerHTML='<div class="sr-item"><span style="color:#6b7280">검색 결과 없음</span></div>';el.classList.add('show');return;}
   let h='';results.slice(0,10).forEach(r=>{
@@ -335,7 +334,6 @@ function doSearch(q){
 }
 function clearSearch(){document.getElementById('searchInput').value='';document.getElementById('searchResults').classList.remove('show');}
 
-// NAVIGATION
 function showMain(){document.getElementById('mainView').style.display='block';document.getElementById('detailView').style.display='none';window.scrollTo(0,0);}
 function showDetail(idx){
   const t=T[idx];
@@ -348,7 +346,6 @@ function showDetail(idx){
   t5.forEach((s,i)=>{h+=`<div class="dchip"><div class="dr ${RC[i]}">${i+1}</div><span class="dn">${s.n}</span><span class="dv up">+${s.r.toFixed(2)}%</span></div>`;});
   if(tv)h+=`<div class="dchip crown">👑 <span class="dn">${tv.n}</span><span class="dv">${fTV(tv.tv)}</span></div>`;
   h+=`</div></div>`;
-  // Table
   const sorted=[...t.s].sort((a,b)=>{if(isU(a)&&!isU(b))return-1;if(!isU(a)&&isU(b))return 1;if(isU(a)&&isU(b))return b.r-a.r;return a.r-b.r;});
   h+=`<table><thead><tr><th>종목명</th><th>현재가</th><th>전일비</th><th>등락률</th><th>거래대금</th></tr></thead><tbody>`;
   sorted.forEach(s=>{
@@ -364,7 +361,6 @@ function showDetail(idx){
   window.scrollTo(0,0);
 }
 
-// RENDER MAIN
 function renderMain(){
   const sorted=[...T.map((t,i)=>({t,i,str:themeStr(t)}))].sort((a,b)=>b.str-a.str);
   let h='';
@@ -379,11 +375,9 @@ function renderMain(){
   document.getElementById('tGrid').innerHTML=h;
 }
 
-// FETCH
 async function fetchAll(){
   const btn=document.getElementById('rfB'),bg=document.getElementById('stB');
   const pa=document.getElementById('pgA'),pf=document.getElementById('pgF'),pt=document.getElementById('pgT');
-  // Count unique codes
   const allCodes=new Set();T.forEach(t=>t.s.forEach(s=>allCodes.add(s.c)));
   const codeMap={};
   btn.disabled=true;btn.textContent='⏳ 불러오는 중...';bg.className='st ld';bg.textContent='⏳ 수신중';pa.style.display='block';
@@ -396,7 +390,6 @@ async function fetchAll(){
     d++;pf.style.width=Math.round(d/totalC*100)+'%';pt.textContent=`${d}/${totalC} 종목 (성공:${ok})`;
     await new Promise(r=>setTimeout(r,55));
   }
-  // Apply to all themes
   T.forEach(t=>{t.s.forEach(s=>{
     const d=codeMap[s.c];
     if(d){s.p=d.price;s.ch=d.change;s.r=d.rate;s.u=d.up;s.tv=d.tradingValue||0;}
@@ -408,9 +401,7 @@ async function fetchAll(){
   else{bg.className='st on';bg.textContent=`🟢 실시간 · ${ts}`;}
   btn.disabled=false;btn.textContent='🔄 시세 불러오기';setTimeout(()=>{pa.style.display='none';},2000);
 }
-function setAR(){if(rTimer)clearInterval(rTimer);const s=parseInt(document.getElementById('ri')?.value||'300');if(s>0)rTimer=setInterval(fetchAll,s*1000);}
 
-// Count total
 T.forEach(t=>total+=t.s.length);
 renderMain();
 </script>
