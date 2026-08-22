@@ -545,25 +545,45 @@ async function fetchAll() {
   const codeList = Array.from(allCodes);
   const BATCH_SIZE = 5; // 한 번에 5개씩만 동시 요청 (API 제재 방지)
   const BATCH_DELAY = 250; // 배치 사이 대기 시간(ms)
+  const failedCodes = new Set();
 
-  async function fetchOne(code) {
+  async function fetchOne(code, isRetry) {
     try {
       const res = await fetch('/api/stock?code=' + code);
       const d = await res.json();
       if (d.success) {
         liveData[code] = d;
         ok++;
+        failedCodes.delete(code);
+      } else {
+        failedCodes.add(code);
       }
-    } catch(e) {}
-    done++;
-    pf.style.width = Math.round(done / total * 100) + '%';
-    pt.textContent = `${done}/${total} 종목 (성공:${ok})`;
+    } catch(e) {
+      failedCodes.add(code);
+    }
+    if (!isRetry) {
+      done++;
+      pf.style.width = Math.round(done / total * 100) + '%';
+      pt.textContent = `${done}/${total} 종목 (성공:${ok})`;
+    }
   }
 
   for (let i = 0; i < codeList.length; i += BATCH_SIZE) {
     const batch = codeList.slice(i, i + BATCH_SIZE);
-    await Promise.all(batch.map(fetchOne));
+    await Promise.all(batch.map(c => fetchOne(c, false)));
     await new Promise(r => setTimeout(r, BATCH_DELAY));
+  }
+
+  // 실패한 종목 자동 재시도 (최대 2회)
+  for (let retryRound = 1; retryRound <= 2 && failedCodes.size > 0; retryRound++) {
+    const retryList = Array.from(failedCodes);
+    pt.textContent = `재시도 중... (${retryList.length}개 종목, ${retryRound}차)`;
+    for (let i = 0; i < retryList.length; i += BATCH_SIZE) {
+      const batch = retryList.slice(i, i + BATCH_SIZE);
+      await Promise.all(batch.map(c => fetchOne(c, true)));
+      await new Promise(r => setTimeout(r, BATCH_DELAY));
+    }
+    pt.textContent = `${total}/${total} 종목 (성공:${ok}, 재시도 ${retryRound}차 완료)`;
   }
 
   // 렌더 갱신
@@ -581,6 +601,9 @@ async function fetchAll() {
   } else {
     bg.className = 'st on';
     bg.textContent = `🟢 실시간 · ${ts}`;
+    if (failedCodes.size > 0) {
+      document.getElementById('errA').innerHTML = `<div class="error-msg">⚠️ ${failedCodes.size}개 종목은 2번 재시도해도 실패했어요. "🔄 시세 불러오기"를 한 번 더 눌러보세요.</div>`;
+    }
   }
   btn.disabled = false;
   btn.textContent = '🔄 시세 불러오기';
