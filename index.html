@@ -7,7 +7,6 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:-apple-system,'Segoe UI',sans-serif;background:#0a0e1a;color:#e2e8f0;min-height:100vh}
-
 /* 헤더 */
 .header{background:#111827;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #1e293b;position:sticky;top:0;z-index:100}
 .header h1{font-size:18px;color:#f1f5f9}
@@ -18,33 +17,32 @@ body{font-family:-apple-system,'Segoe UI',sans-serif;background:#0a0e1a;color:#e
 .btn-secondary{background:#1e293b;color:#94a3b8}
 .btn-secondary:hover{background:#334155}
 .btn-small{padding:5px 10px;font-size:12px}
+.btn-toggle{background:#78350f;color:#fbbf24}
+.btn-toggle:hover{background:#92400e}
 .st{font-size:11px;padding:4px 10px;border-radius:8px;font-weight:600}
 .st.off{background:#1e293b;color:#64748b}
 .st.on{background:#064e3b;color:#6ee7b7}
 .st.ld{background:#78350f;color:#fbbf24}
-
 /* 상태 바 */
 .status-bar{background:#111827;padding:10px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #1e293b;flex-wrap:wrap}
 .prog-area{display:none;flex:1;min-width:200px}
 .prog-bar{height:4px;background:#1e293b;border-radius:2px;overflow:hidden}
 .prog-fill{height:100%;background:#2563eb;width:0%;transition:width .3s}
 .prog-text{font-size:11px;color:#64748b;margin-top:4px}
-
 /* 컨테이너 */
 .container{max-width:1200px;margin:0 auto;padding:16px}
-
-/* 검색 */
-.search-bar{position:relative;margin-bottom:16px}
+/* 검색 + 필터 바 */
+.search-bar{position:relative;margin-bottom:10px}
 .search-bar input{width:100%;padding:12px 16px 12px 40px;border-radius:12px;border:1px solid #1e293b;background:#111827;color:#e2e8f0;font-size:14px;outline:none}
 .search-bar input:focus{border-color:#2563eb}
 .search-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#64748b}
-
+.filter-bar{display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.filter-info{font-size:12px;color:#64748b}
 /* 빈 상태 */
 .empty{text-align:center;padding:60px 20px;color:#64748b}
 .empty-icon{font-size:56px;margin-bottom:16px}
 .empty-text{font-size:15px;line-height:1.8}
 .empty .btn{margin-top:16px}
-
 /* 메인 화면: 테마 카드 그리드 */
 .theme-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px}
 .tc{background:#111827;border-radius:12px;padding:16px;cursor:pointer;border:1px solid #1e293b;transition:all .2s}
@@ -73,13 +71,11 @@ body{font-family:-apple-system,'Segoe UI',sans-serif;background:#0a0e1a;color:#e
 .tc-crown .tcv{color:#64748b}
 .tc-empty{color:#475569;font-size:12px;padding:8px 0}
 .tc-arrow{color:#334155;font-size:18px}
-
 /* 서브 화면 */
 .sub-header{display:flex;align-items:center;gap:12px;margin-bottom:16px}
 .sub-header h2{font-size:20px;font-weight:700;color:#f1f5f9}
 .sub-back{cursor:pointer;font-size:24px;color:#64748b}
 .sub-back:hover{color:#e2e8f0}
-
 /* 서브 테이블 */
 .stock-table{width:100%;border-collapse:collapse}
 .stock-table th{text-align:left;padding:10px 12px;font-size:12px;color:#64748b;border-bottom:1px solid #1e293b;position:sticky;top:0;background:#0a0e1a}
@@ -97,56 +93,58 @@ body{font-family:-apple-system,'Segoe UI',sans-serif;background:#0a0e1a;color:#e
 .rate.flat{color:#64748b}
 .tv{text-align:right;color:#94a3b8;font-size:12px}
 .rk-badge{display:inline-block;width:20px;height:20px;border-radius:5px;text-align:center;line-height:20px;font-size:10px;font-weight:800;color:#fff;margin-right:6px}
-
 /* 에러 */
 .error-msg{background:#450a0a;color:#fca5a5;padding:12px 16px;border-radius:10px;font-size:13px;margin:10px 0}
-
 @media(max-width:600px){
-  .theme-grid{grid-template-columns:1fr}
-  .header h1{font-size:15px}
+.theme-grid{grid-template-columns:1fr}
+.header h1{font-size:15px}
 }
 </style>
 </head>
 <body>
-
 <div class="header">
-  <h1>📊 주식 테마 대시보드</h1>
-  <div class="header-right">
-    <span class="st off" id="stB">⏸ 대기중</span>
-    <button class="btn btn-primary btn-small" id="rfB" onclick="fetchAll()">🔄 시세 불러오기</button>
-    <button class="btn btn-secondary btn-small" onclick="location.href='themes.html'">📋 종목 관리</button>
-  </div>
+<h1>📊 주식 테마 대시보드</h1>
+<div class="header-right">
+<span class="st off" id="stB">⏸ 대기중</span>
+<button class="btn btn-primary btn-small" id="rfB" onclick="fetchAll()">🔄 시세 불러오기</button>
+<button class="btn btn-secondary btn-small" onclick="location.href='themes.html'">📋 종목 관리</button>
 </div>
-
+</div>
 <div class="status-bar">
-  <div class="prog-area" id="pgA">
-    <div class="prog-bar"><div class="prog-fill" id="pgF"></div></div>
-    <div class="prog-text" id="pgT"></div>
-  </div>
-  <div id="errA"></div>
+<div class="prog-area" id="pgA">
+<div class="prog-bar"><div class="prog-fill" id="pgF"></div></div>
+<div class="prog-text" id="pgT"></div>
+</div>
+<div id="errA"></div>
+</div>
+<div class="container">
+<!-- 검색 -->
+<div class="search-bar">
+<span class="search-icon">🔍</span>
+<input type="text" id="searchInput" placeholder="종목명, 태그로 검색" oninput="renderSearch()">
 </div>
 
-<div class="container">
-  <!-- 검색 -->
-  <div class="search-bar">
-    <span class="search-icon">🔍</span>
-    <input type="text" id="searchInput" placeholder="종목명, 태그로 검색" oninput="renderSearch()">
-  </div>
+<!-- 상승 테마 필터 -->
+<div class="filter-bar">
+<button class="btn btn-small" id="topToggleBtn" onclick="toggleTopOnly()"></button>
+<span class="filter-info" id="filterInfo"></span>
+</div>
 
-  <!-- 메인 뷰 -->
-  <div id="mainView"></div>
-
-  <!-- 서브 뷰 -->
-  <div id="subView" style="display:none"></div>
+<!-- 메인 뷰 -->
+<div id="mainView"></div>
+<!-- 서브 뷰 -->
+<div id="subView" style="display:none"></div>
 </div>
 
 <script>
 // ─── 데이터 ───
 const STORAGE_KEY = 'stock-dashboard-data';
 const LIVE_KEY = 'stock-live-data'; // 시세 데이터 저장용
+const TOP_FILTER_KEY = 'stock-dashboard-top-filter'; // 상승 테마만 보기 상태 저장용
 let liveData = {}; // code -> {price, change, rate, up, tradingValue, ...}
 let currentView = 'main'; // main | sub
 let currentThemeIdx = -1;
+let showTopOnly = true; // 기본값: 상승 테마만 보기
 
 function loadData() {
   try {
@@ -165,7 +163,6 @@ function saveLiveData() {
     }));
   } catch(e) {}
 }
-
 function loadLiveData() {
   try {
     const raw = localStorage.getItem(LIVE_KEY);
@@ -176,6 +173,18 @@ function loadLiveData() {
     }
   } catch(e) {}
   return null;
+}
+
+// 필터 상태 저장/불러오기
+function loadTopFilter() {
+  try {
+    const raw = localStorage.getItem(TOP_FILTER_KEY);
+    if (raw !== null) return raw === 'true';
+  } catch(e) {}
+  return true; // 기본 ON
+}
+function saveTopFilter() {
+  try { localStorage.setItem(TOP_FILTER_KEY, String(showTopOnly)); } catch(e) {}
 }
 
 // ─── 포맷 유틸 ───
@@ -195,6 +204,24 @@ function fTV(v) {
 
 const RC = ['rk1','rk2','rk3','rk4','rk5'];
 
+// ─── 필터 토글 버튼 갱신 ───
+function renderTopToggleBtn() {
+  const btn = document.getElementById('topToggleBtn');
+  if (showTopOnly) {
+    btn.className = 'btn btn-small btn-toggle';
+    btn.textContent = '🔥 상승 테마만 보는 중';
+  } else {
+    btn.className = 'btn btn-small btn-secondary';
+    btn.textContent = '📋 전체 테마 보기';
+  }
+}
+
+function toggleTopOnly() {
+  showTopOnly = !showTopOnly;
+  saveTopFilter();
+  if (currentView === 'main') renderMain();
+}
+
 // ─── 메인 렌더 ───
 function renderMain() {
   const data = loadData();
@@ -204,7 +231,10 @@ function renderMain() {
   subView.style.display = 'none';
   currentView = 'main';
 
+  renderTopToggleBtn();
+
   if (data.themes.length === 0) {
+    document.getElementById('filterInfo').textContent = '';
     mainView.innerHTML = `
       <div class="empty">
         <div class="empty-icon">📁</div>
@@ -254,18 +284,42 @@ function renderMain() {
   // 테마 강도 순 정렬 (평균 등락률이 높은 테마가 위로)
   themeCards.sort((a, b) => b.avgRate - a.avgRate);
 
+  const totalCount = themeCards.length;
+  let displayCards = themeCards;
+
+  if (showTopOnly) {
+    // 상승 중인(평균 등락률 > 0) 테마만
+    displayCards = themeCards.filter(c => c.avgRate > 0);
+    document.getElementById('filterInfo').textContent =
+      displayCards.length > 0
+        ? `상승 테마 ${displayCards.length}개 / 전체 ${totalCount}개`
+        : `지금은 상승 중인 테마가 없어요 (전체 ${totalCount}개)`;
+  } else {
+    document.getElementById('filterInfo').textContent = `전체 테마 ${totalCount}개`;
+  }
+
+  if (displayCards.length === 0) {
+    mainView.innerHTML = `
+      <div class="empty">
+        <div class="empty-icon">😴</div>
+        <div class="empty-text">
+          지금은 상승 중인 테마가 없어요.<br>
+          시세를 다시 불러오거나, "전체 테마 보기"를 눌러보세요.
+        </div>
+      </div>`;
+    return;
+  }
+
   let html = '<div class="theme-grid">';
-  themeCards.forEach(({ theme, ti, top5, tvKing, avgRate }) => {
+  displayCards.forEach(({ theme, ti, top5, tvKing, avgRate }) => {
     const rateClass = avgRate > 0 ? 'up' : avgRate < 0 ? 'down' : 'flat';
     const rateStr = avgRate !== 0 ? (avgRate > 0 ? '+' : '') + avgRate.toFixed(2) + '%' : '-';
-
     html += `<div class="tc" onclick="openSub(${ti})">
       <div class="tc-head">
         <span class="tc-name">${theme.name}</span>
         <span class="tc-str ${rateClass}">${rateStr}</span>
       </div>
       <div class="tc-list">`;
-
     if (top5.length > 0) {
       top5.forEach((s, j) => {
         html += `<div class="tc-row">
@@ -277,11 +331,9 @@ function renderMain() {
     } else {
       html += `<div class="tc-empty">시세를 불러오면 상승 TOP5가 표시됩니다</div>`;
     }
-
     if (tvKing) {
       html += `<div class="tc-crown">👑 거래대금 <span class="tcn">${tvKing.name}</span> <span class="tcv">${fTV(tvKing.tradingValue)}</span></div>`;
     }
-
     html += `</div>
       <div style="text-align:right;margin-top:8px">
         <span style="color:#334155;font-size:12px">${theme.stocks.length}종목 →</span>
@@ -337,7 +389,6 @@ function openSub(ti) {
         </tr>
       </thead>
       <tbody>`;
-
   stocks.forEach((s, i) => {
     const rateClass = s.rate > 0 ? 'up' : s.rate < 0 ? 'down' : 'flat';
     const rankBg = i < 5 ? RC[i] : '';
@@ -353,7 +404,6 @@ function openSub(ti) {
       <td class="tv">${s.tradingValue ? fTV(s.tradingValue) : '-'}</td>
     </tr>`;
   });
-
   html += `</tbody></table></div>`;
   subView.innerHTML = html;
 }
@@ -365,7 +415,6 @@ function renderSearch() {
     if (currentView === 'main') renderMain();
     return;
   }
-
   const data = loadData();
   const results = [];
   data.themes.forEach(theme => {
@@ -396,9 +445,9 @@ function renderSearch() {
   }
 
   let html = `<div style="margin-bottom:12px;color:#94a3b8;font-size:13px">"${query}" 검색결과 ${results.length}건</div>
-    <table class="stock-table"><thead><tr>
-      <th>종목</th><th>테마</th><th class="price">현재가</th><th class="rate">등락률</th>
-    </tr></thead><tbody>`;
+  <table class="stock-table"><thead><tr>
+    <th>종목</th><th>테마</th><th class="price">현재가</th><th class="rate">등락률</th>
+  </tr></thead><tbody>`;
   results.forEach(s => {
     const rateClass = s.rate > 0 ? 'up' : s.rate < 0 ? 'down' : 'flat';
     html += `<tr>
@@ -476,7 +525,8 @@ async function fetchAll() {
   setTimeout(() => { pa.style.display = 'none'; }, 2000);
 }
 
-// ─── 초기: 저장된 시세 불러오기 ───
+// ─── 초기: 저장된 시세 및 필터 상태 불러오기 ───
+showTopOnly = loadTopFilter();
 const savedAt = loadLiveData();
 if (savedAt) {
   const t = new Date(savedAt).toLocaleString('ko-KR', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' });
