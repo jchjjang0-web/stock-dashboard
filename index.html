@@ -37,6 +37,15 @@ body{font-family:-apple-system,'Segoe UI',sans-serif;background:#0a0e1a;color:#e
 .search-bar input:focus{border-color:#2563eb}
 .search-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#64748b}
 .filter-bar{display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+/* 지수 바 */
+.index-bar{display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.index-card{background:#111827;border:1px solid #1e293b;border-radius:10px;padding:10px 16px;display:flex;align-items:center;gap:10px;flex:1;min-width:150px}
+.index-name{font-size:13px;color:#94a3b8;font-weight:600}
+.index-price{font-size:15px;font-weight:700;color:#f1f5f9}
+.index-rate{font-size:13px;font-weight:700}
+.index-rate.up{color:#ef4444}
+.index-rate.down{color:#3b82f6}
+.index-rate.flat{color:#64748b}
 .filter-info{font-size:12px;color:#64748b}
 /* 빈 상태 */
 .empty{text-align:center;padding:60px 20px;color:#64748b}
@@ -66,6 +75,7 @@ body{font-family:-apple-system,'Segoe UI',sans-serif;background:#0a0e1a;color:#e
 .tc-sr.up{color:#ef4444}
 .tc-sr.down{color:#3b82f6}
 .tc-sr.flat{color:#64748b}
+.tc-tv{font-size:11px;color:#64748b;min-width:44px;text-align:right}
 .tc-crown{margin-top:8px;padding-top:8px;border-top:1px solid #1e293b;font-size:12px;color:#94a3b8}
 .tc-crown .tcn{color:#fbbf24;font-weight:600}
 .tc-crown .tcv{color:#64748b}
@@ -118,6 +128,20 @@ body{font-family:-apple-system,'Segoe UI',sans-serif;background:#0a0e1a;color:#e
 <div id="errA"></div>
 </div>
 <div class="container">
+<!-- 코스피/코스닥 지수 -->
+<div class="index-bar" id="indexBar" style="display:none">
+<div class="index-card">
+<span class="index-name">코스피</span>
+<span class="index-price" id="kospiPrice">-</span>
+<span class="index-rate flat" id="kospiRate">-</span>
+</div>
+<div class="index-card">
+<span class="index-name">코스닥</span>
+<span class="index-price" id="kosdaqPrice">-</span>
+<span class="index-rate flat" id="kosdaqRate">-</span>
+</div>
+</div>
+
 <!-- 검색 -->
 <div class="search-bar">
 <span class="search-icon">🔍</span>
@@ -312,12 +336,9 @@ function renderMain() {
 
   let html = '<div class="theme-grid">';
   displayCards.forEach(({ theme, ti, top5, tvKing, avgRate }) => {
-    const rateClass = avgRate > 0 ? 'up' : avgRate < 0 ? 'down' : 'flat';
-    const rateStr = avgRate !== 0 ? (avgRate > 0 ? '+' : '') + avgRate.toFixed(2) + '%' : '-';
     html += `<div class="tc" onclick="openSub(${ti})">
       <div class="tc-head">
         <span class="tc-name">${theme.name}</span>
-        <span class="tc-str ${rateClass}">${rateStr}</span>
       </div>
       <div class="tc-list">`;
     if (top5.length > 0) {
@@ -326,6 +347,7 @@ function renderMain() {
           <div class="tc-rk ${RC[j]}">${j+1}</div>
           <span class="tc-sn">${s.name}</span>
           <span class="tc-sr up">+${s.rate.toFixed(2)}%</span>
+          <span class="tc-tv">${s.tradingValue ? fTV(s.tradingValue) : '-'}</span>
         </div>`;
       });
     } else {
@@ -461,8 +483,40 @@ function renderSearch() {
   mainView.innerHTML = html;
 }
 
+// ─── 코스피/코스닥 지수 불러오기 ───
+async function fetchIndices() {
+  const indexBar = document.getElementById('indexBar');
+  try {
+    const [kospiRes, kosdaqRes] = await Promise.all([
+      fetch('/api/stock?code=0001&type=index').then(r => r.json()),
+      fetch('/api/stock?code=1001&type=index').then(r => r.json())
+    ]);
+
+    if (kospiRes.success) {
+      document.getElementById('kospiPrice').textContent = kospiRes.price.toFixed(2);
+      const rateEl = document.getElementById('kospiRate');
+      const rc = kospiRes.rate > 0 ? 'up' : kospiRes.rate < 0 ? 'down' : 'flat';
+      rateEl.className = 'index-rate ' + rc;
+      rateEl.textContent = (kospiRes.rate > 0 ? '+' : '') + kospiRes.rate.toFixed(2) + '%';
+    }
+    if (kosdaqRes.success) {
+      document.getElementById('kosdaqPrice').textContent = kosdaqRes.price.toFixed(2);
+      const rateEl = document.getElementById('kosdaqRate');
+      const rc = kosdaqRes.rate > 0 ? 'up' : kosdaqRes.rate < 0 ? 'down' : 'flat';
+      rateEl.className = 'index-rate ' + rc;
+      rateEl.textContent = (kosdaqRes.rate > 0 ? '+' : '') + kosdaqRes.rate.toFixed(2) + '%';
+    }
+    if (kospiRes.success || kosdaqRes.success) {
+      indexBar.style.display = 'flex';
+    }
+  } catch (e) {
+    // 지수 불러오기 실패해도 나머지 대시보드는 정상 동작
+  }
+}
+
 // ─── 시세 불러오기 (한국투자증권 API) ───
 async function fetchAll() {
+  fetchIndices(); // 지수도 같이 불러옴 (실패해도 종목 시세는 계속 진행)
   const data = loadData();
   const btn = document.getElementById('rfB');
   const bg = document.getElementById('stB');
@@ -488,8 +542,11 @@ async function fetchAll() {
 
   let done = 0, ok = 0;
   const total = allCodes.size;
+  const codeList = Array.from(allCodes);
+  const BATCH_SIZE = 5; // 한 번에 5개씩만 동시 요청 (API 제재 방지)
+  const BATCH_DELAY = 250; // 배치 사이 대기 시간(ms)
 
-  for (const code of allCodes) {
+  async function fetchOne(code) {
     try {
       const res = await fetch('/api/stock?code=' + code);
       const d = await res.json();
@@ -501,7 +558,12 @@ async function fetchAll() {
     done++;
     pf.style.width = Math.round(done / total * 100) + '%';
     pt.textContent = `${done}/${total} 종목 (성공:${ok})`;
-    await new Promise(r => setTimeout(r, 55));
+  }
+
+  for (let i = 0; i < codeList.length; i += BATCH_SIZE) {
+    const batch = codeList.slice(i, i + BATCH_SIZE);
+    await Promise.all(batch.map(fetchOne));
+    await new Promise(r => setTimeout(r, BATCH_DELAY));
   }
 
   // 렌더 갱신
@@ -534,6 +596,7 @@ if (savedAt) {
   document.getElementById('stB').textContent = `💾 저장됨 · ${t}`;
 }
 renderMain();
+fetchIndices();
 </script>
 </body>
 </html>
