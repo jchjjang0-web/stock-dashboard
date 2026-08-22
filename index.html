@@ -484,12 +484,13 @@ function renderSearch() {
 }
 
 // ─── 코스피/코스닥 지수 불러오기 ───
-async function fetchIndices() {
+async function fetchIndices(sharedToken) {
   const indexBar = document.getElementById('indexBar');
+  const tokenParam = sharedToken ? `&token=${sharedToken}` : '';
   try {
     const [kospiRes, kosdaqRes] = await Promise.all([
-      fetch('/api/stock?code=0001&type=index').then(r => r.json()),
-      fetch('/api/stock?code=1001&type=index').then(r => r.json())
+      fetch('/api/stock?code=0001&type=index' + tokenParam).then(r => r.json()),
+      fetch('/api/stock?code=1001&type=index' + tokenParam).then(r => r.json())
     ]);
 
     if (kospiRes.success) {
@@ -516,7 +517,6 @@ async function fetchIndices() {
 
 // ─── 시세 불러오기 (한국투자증권 API) ───
 async function fetchAll() {
-  fetchIndices(); // 지수도 같이 불러옴 (실패해도 종목 시세는 계속 진행)
   const data = loadData();
   const btn = document.getElementById('rfB');
   const bg = document.getElementById('stB');
@@ -534,11 +534,23 @@ async function fetchAll() {
   }
 
   btn.disabled = true;
-  btn.textContent = '⏳ 불러오는 중...';
+  btn.textContent = '⏳ 토큰 준비 중...';
   bg.className = 'st ld';
   bg.textContent = '⏳ 수신중';
   pa.style.display = 'block';
   document.getElementById('errA').innerHTML = '';
+
+  // 토큰을 딱 1번만 미리 받아온 다음, 모든 요청에 재사용 (동시 요청으로 인한 중복 토큰 발급 방지)
+  let sharedToken = null;
+  try {
+    const tokenRes = await fetch('/api/stock?action=token');
+    const tokenData = await tokenRes.json();
+    if (tokenData.success) sharedToken = tokenData.token;
+  } catch (e) {}
+
+  fetchIndices(sharedToken); // 지수도 같은 토큰으로 같이 불러옴
+
+  btn.textContent = '⏳ 불러오는 중...';
 
   let done = 0, ok = 0;
   const total = allCodes.size;
@@ -546,10 +558,11 @@ async function fetchAll() {
   const BATCH_SIZE = 5; // 한 번에 5개씩만 동시 요청 (API 제재 방지)
   const BATCH_DELAY = 250; // 배치 사이 대기 시간(ms)
   const failedCodes = new Set();
+  const tokenParam = sharedToken ? `&token=${sharedToken}` : '';
 
   async function fetchOne(code, isRetry) {
     try {
-      const res = await fetch('/api/stock?code=' + code);
+      const res = await fetch('/api/stock?code=' + code + tokenParam);
       const d = await res.json();
       if (d.success) {
         liveData[code] = d;
