@@ -324,7 +324,7 @@ function renderMain() {
           <div class="tc-rk ${RC[j]}">${j+1}</div>
           <span class="tc-sn">${s.name}</span>
           <span class="tc-sr up">+${s.rate.toFixed(2)}%</span>
-          <span class="tc-tv">${s.tradingValue ? fTV(s.tradingValue) : '-'}</span>
+          <span class="tc-tv">${s.price ? fTV(s.tradingValue) : '-'}</span>
         </div>`;
       });
     } else {
@@ -399,8 +399,8 @@ function openSub(ti) {
         ${s.tags && s.tags.length ? `<div class="st-tags">${s.tags.map(t => `<span class="st-tag">#${t}</span>`).join('')}</div>` : ''}
       </td>
       <td class="price">${s.price ? fPrice(s.price) : '-'}</td>
-      <td class="rate ${rateClass}">${s.rate ? fRate(s.rate) : '-'}</td>
-      <td class="tv">${s.tradingValue ? fTV(s.tradingValue) : '-'}</td>
+      <td class="rate ${rateClass}">${s.price ? fRate(s.rate) : '-'}</td>
+      <td class="tv">${s.price ? fTV(s.tradingValue) : '-'}</td>
     </tr>`;
   });
   html += `</tbody></table></div>`;
@@ -453,7 +453,7 @@ function renderSearch() {
       <td><span class="sn">${s.name}</span> ${s.code ? `<span class="sc">${s.code}</span>` : ''}</td>
       <td><span style="color:#60a5fa;font-size:12px">#${s.theme}</span></td>
       <td class="price">${s.price ? fPrice(s.price) : '-'}</td>
-      <td class="rate ${rateClass}">${s.rate ? fRate(s.rate) : '-'}</td>
+      <td class="rate ${rateClass}">${s.price ? fRate(s.rate) : '-'}</td>
     </tr>`;
   });
   html += '</tbody></table>';
