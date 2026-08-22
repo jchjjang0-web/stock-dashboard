@@ -37,15 +37,6 @@ body{font-family:-apple-system,'Segoe UI',sans-serif;background:#0a0e1a;color:#e
 .search-bar input:focus{border-color:#2563eb}
 .search-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#64748b}
 .filter-bar{display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap}
-/* 지수 바 */
-.index-bar{display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap}
-.index-card{background:#111827;border:1px solid #1e293b;border-radius:10px;padding:10px 16px;display:flex;align-items:center;gap:10px;flex:1;min-width:150px}
-.index-name{font-size:13px;color:#94a3b8;font-weight:600}
-.index-price{font-size:15px;font-weight:700;color:#f1f5f9}
-.index-rate{font-size:13px;font-weight:700}
-.index-rate.up{color:#ef4444}
-.index-rate.down{color:#3b82f6}
-.index-rate.flat{color:#64748b}
 .filter-info{font-size:12px;color:#64748b}
 /* 빈 상태 */
 .empty{text-align:center;padding:60px 20px;color:#64748b}
@@ -128,20 +119,6 @@ body{font-family:-apple-system,'Segoe UI',sans-serif;background:#0a0e1a;color:#e
 <div id="errA"></div>
 </div>
 <div class="container">
-<!-- 코스피/코스닥 지수 -->
-<div class="index-bar" id="indexBar" style="display:none">
-<div class="index-card">
-<span class="index-name">코스피</span>
-<span class="index-price" id="kospiPrice">-</span>
-<span class="index-rate flat" id="kospiRate">-</span>
-</div>
-<div class="index-card">
-<span class="index-name">코스닥</span>
-<span class="index-price" id="kosdaqPrice">-</span>
-<span class="index-rate flat" id="kosdaqRate">-</span>
-</div>
-</div>
-
 <!-- 검색 -->
 <div class="search-bar">
 <span class="search-icon">🔍</span>
@@ -483,38 +460,6 @@ function renderSearch() {
   mainView.innerHTML = html;
 }
 
-// ─── 코스피/코스닥 지수 불러오기 ───
-async function fetchIndices(sharedToken) {
-  const indexBar = document.getElementById('indexBar');
-  const tokenParam = sharedToken ? `&token=${sharedToken}` : '';
-  try {
-    const [kospiRes, kosdaqRes] = await Promise.all([
-      fetch('/api/stock?code=0001&type=index' + tokenParam).then(r => r.json()),
-      fetch('/api/stock?code=1001&type=index' + tokenParam).then(r => r.json())
-    ]);
-
-    if (kospiRes.success) {
-      document.getElementById('kospiPrice').textContent = kospiRes.price.toFixed(2);
-      const rateEl = document.getElementById('kospiRate');
-      const rc = kospiRes.rate > 0 ? 'up' : kospiRes.rate < 0 ? 'down' : 'flat';
-      rateEl.className = 'index-rate ' + rc;
-      rateEl.textContent = (kospiRes.rate > 0 ? '+' : '') + kospiRes.rate.toFixed(2) + '%';
-    }
-    if (kosdaqRes.success) {
-      document.getElementById('kosdaqPrice').textContent = kosdaqRes.price.toFixed(2);
-      const rateEl = document.getElementById('kosdaqRate');
-      const rc = kosdaqRes.rate > 0 ? 'up' : kosdaqRes.rate < 0 ? 'down' : 'flat';
-      rateEl.className = 'index-rate ' + rc;
-      rateEl.textContent = (kosdaqRes.rate > 0 ? '+' : '') + kosdaqRes.rate.toFixed(2) + '%';
-    }
-    if (kospiRes.success || kosdaqRes.success) {
-      indexBar.style.display = 'flex';
-    }
-  } catch (e) {
-    // 지수 불러오기 실패해도 나머지 대시보드는 정상 동작
-  }
-}
-
 // ─── 시세 불러오기 (한국투자증권 API) ───
 async function fetchAll() {
   const data = loadData();
@@ -547,8 +492,6 @@ async function fetchAll() {
     const tokenData = await tokenRes.json();
     if (tokenData.success) sharedToken = tokenData.token;
   } catch (e) {}
-
-  fetchIndices(sharedToken); // 지수도 같은 토큰으로 같이 불러옴
 
   btn.textContent = '⏳ 불러오는 중...';
 
@@ -632,7 +575,6 @@ if (savedAt) {
   document.getElementById('stB').textContent = `💾 저장됨 · ${t}`;
 }
 renderMain();
-fetchIndices();
 </script>
 </body>
 </html>
