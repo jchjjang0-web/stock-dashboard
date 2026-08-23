@@ -122,6 +122,7 @@ body{font-family:-apple-system,'Segoe UI',sans-serif;background:#0a0e1a;color:#e
 <div class="header-right">
 <span class="st off" id="stB">⏸ 대기중</span>
 <button class="btn btn-primary btn-small" id="rfB" onclick="fetchAll()">🔄 시세 불러오기</button>
+<button class="btn btn-secondary btn-small" onclick="importData()">📥 데이터 가져오기</button>
 <button class="btn btn-secondary btn-small" onclick="location.href='themes.html'">📋 종목 관리</button>
 </div>
 </div>
@@ -689,6 +690,27 @@ document.getElementById('editModal').addEventListener('click', function(e) {
 document.querySelector('.modal-box').addEventListener('click', function(e) {
   e.stopPropagation();
 });
+
+// ─── 데이터 가져오기 (서버에서 최신 데이터 자동 로드) ───
+async function importData() {
+  const toast = document.getElementById('editToast');
+  try {
+    toast.textContent = '📥 데이터 가져오는 중...';
+    toast.style.display = 'block';
+    const res = await fetch('/data.json?' + Date.now());
+    if (!res.ok) throw new Error('파일을 찾을 수 없습니다');
+    const data = await res.json();
+    data.lastUpdated = new Date().toISOString();
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    toast.textContent = '✅ 테마 ' + data.themes.length + '개 데이터 가져오기 완료!';
+    setTimeout(() => { toast.style.display = 'none'; location.reload(); }, 1500);
+  } catch (e) {
+    toast.style.background = '#450a0a';
+    toast.style.color = '#fca5a5';
+    toast.textContent = '❌ 데이터 가져오기 실패: ' + e.message;
+    setTimeout(() => { toast.style.display = 'none'; toast.style.background = '#065f46'; toast.style.color = '#6ee7b7'; }, 3000);
+  }
+}
 
 // ─── 초기: 저장된 시세 및 필터 상태 불러오기 ───
 showTopOnly = loadTopFilter();
