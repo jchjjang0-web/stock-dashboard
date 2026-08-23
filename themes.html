@@ -89,6 +89,7 @@ body{font-family:-apple-system,'Segoe UI',sans-serif;background:#0a0e1a;color:#e
 <div class="header">
   <h1>📋 종목 관리</h1>
   <div class="header-btns">
+    <button class="btn btn-secondary" onclick="importData()">📥 데이터 가져오기</button>
     <button class="btn btn-primary" onclick="location.href='index.html'">📊 대시보드</button>
   </div>
 </div>
@@ -469,6 +470,22 @@ function deleteStock(ti, si) {
   closeModal();
   renderAll();
   showToast(`"${name}" 삭제됨`);
+}
+
+// ─── 데이터 가져오기 (서버에서 최신 데이터 자동 로드) ───
+async function importData() {
+  try {
+    showToast('📥 데이터 가져오는 중...');
+    const res = await fetch('/data.json?' + Date.now());
+    if (!res.ok) throw new Error('파일을 찾을 수 없습니다');
+    const data = await res.json();
+    data.lastUpdated = new Date().toISOString();
+    localStorage.setItem('stock-dashboard-data', JSON.stringify(data));
+    showToast('✅ 테마 ' + data.themes.length + '개 데이터 가져오기 완료!');
+    setTimeout(() => { location.reload(); }, 1500);
+  } catch (e) {
+    showToast('❌ 데이터 가져오기 실패: ' + e.message);
+  }
 }
 
 // ─── 초기 렌더 ───
