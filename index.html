@@ -102,7 +102,7 @@ body{font-family:-apple-system,'Segoe UI',sans-serif;background:#0a0e1a;color:#e
 /* 편집 모달 */
 .modal-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);z-index:200;align-items:center;justify-content:center}
 .modal-overlay.show{display:flex}
-.modal-box{background:#1e293b;border-radius:12px;padding:20px;width:90%;max-width:400px;border:1px solid #334155}
+.modal-box{background:#1e293b;border-radius:12px;padding:20px;width:90%;max-width:400px;border:1px solid #334155;position:relative;z-index:210}
 .modal-box h3{font-size:16px;color:#f1f5f9;margin-bottom:14px}
 .modal-box label{display:block;font-size:12px;color:#94a3b8;margin-bottom:4px;margin-top:10px}
 .modal-box input{width:100%;padding:8px 10px;border-radius:8px;border:1px solid #334155;background:#0f172a;color:#e2e8f0;font-size:13px;outline:none}
@@ -162,8 +162,8 @@ body{font-family:-apple-system,'Segoe UI',sans-serif;background:#0a0e1a;color:#e
 <label>설명 (선택)</label>
 <input type="text" id="editDesc">
 <div class="modal-btns">
-<button class="btn btn-secondary btn-small" onclick="closeEdit()">취소</button>
-<button class="btn btn-primary btn-small" onclick="saveEdit()">저장</button>
+<button class="btn btn-secondary btn-small" onclick="event.stopPropagation();closeEdit()">취소</button>
+<button class="btn btn-primary btn-small" onclick="event.stopPropagation();saveEdit()">저장</button>
 </div>
 </div>
 </div>
@@ -677,9 +677,12 @@ function saveEdit() {
   setTimeout(() => { toast.style.display = 'none'; }, 2500);
 }
 
-// 모달 밖 클릭하면 닫기
+// 모달 밖 클릭하면 닫기 (모달 박스 안 클릭은 무시)
 document.getElementById('editModal').addEventListener('click', function(e) {
   if (e.target === this) closeEdit();
+});
+document.querySelector('.modal-box').addEventListener('click', function(e) {
+  e.stopPropagation();
 });
 
 // ─── 초기: 저장된 시세 및 필터 상태 불러오기 ───
