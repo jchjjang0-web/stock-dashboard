@@ -77,6 +77,9 @@ body{font-family:-apple-system,'Segoe UI',sans-serif;background:#0a0e1a;color:#e
 .sub-header h2{font-size:20px;font-weight:700;color:#f1f5f9}
 .sub-back{cursor:pointer;font-size:24px;color:#64748b}
 .sub-back:hover{color:#e2e8f0}
+.sub-nav{display:flex;align-items:center;gap:12px;margin-left:auto}
+.sub-arrow{font-size:13px;color:#60a5fa;cursor:pointer;padding:4px 8px;border-radius:6px;background:#1e293b;font-weight:600}
+.sub-arrow:hover{background:#334155;color:#93c5fd}
 /* 서브 테이블 */
 .stock-table{width:100%;border-collapse:collapse}
 .stock-table th{text-align:left;padding:10px 12px;font-size:12px;color:#64748b;border-bottom:1px solid #1e293b;position:sticky;top:0;background:#0a0e1a}
@@ -370,11 +373,21 @@ function openSub(ti) {
   // 등락률 순 정렬
   stocks.sort((a, b) => b.rate - a.rate);
 
+  const data_all = loadData();
+  const totalThemes = data_all.themes.length;
+  const prevIdx = ti > 0 ? ti - 1 : totalThemes - 1;
+  const nextIdx = ti < totalThemes - 1 ? ti + 1 : 0;
+
   let html = `
     <div class="sub-header">
       <span class="sub-back" onclick="renderMain()">← </span>
       <h2>${theme.name}</h2>
       <span style="color:#64748b;font-size:14px">${stocks.length}종목</span>
+      <div class="sub-nav">
+        <span class="sub-arrow" onclick="openSub(${prevIdx})" title="${data_all.themes[prevIdx].name}">◀ 이전</span>
+        <span style="color:#475569;font-size:12px">${ti+1} / ${totalThemes}</span>
+        <span class="sub-arrow" onclick="openSub(${nextIdx})" title="${data_all.themes[nextIdx].name}">다음 ▶</span>
+      </div>
     </div>
     <div style="overflow-x:auto">
     <table class="stock-table">
