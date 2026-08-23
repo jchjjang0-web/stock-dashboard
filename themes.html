@@ -393,12 +393,34 @@ function saveStock(ti, si, keepOpen) {
 
   const data = loadData();
   if (si !== null && si !== undefined) {
-    // 수정
-    data.themes[ti].stocks[si] = { ...data.themes[ti].stocks[si], ...stock };
+    // 수정: 현재 테마 업데이트
+    const oldStock = data.themes[ti].stocks[si];
+    const oldName = oldStock.name;
+    const oldCode = oldStock.code;
+    data.themes[ti].stocks[si] = { ...oldStock, ...stock };
+
+    // 동일 종목(이름 또는 코드 일치)이 다른 테마에도 있으면 같이 수정
+    let syncCount = 0;
+    data.themes.forEach((theme, tIdx) => {
+      if (tIdx === ti) return; // 이미 수정한 현재 테마는 건너뛰기
+      theme.stocks.forEach((s, sIdx) => {
+        const matchByName = oldName && s.name === oldName;
+        const matchByCode = oldCode && s.code === oldCode;
+        if (matchByName || matchByCode) {
+          data.themes[tIdx].stocks[sIdx] = { ...s, name: stock.name, code: stock.code, desc: stock.desc };
+          syncCount++;
+        }
+      });
+    });
+
     saveData(data);
     closeModal();
     renderAll();
-    showToast(`"${name}" 수정됨`);
+    if (syncCount > 0) {
+      showToast(`"${name}" 수정됨 (다른 테마 ${syncCount}곳도 동기화)`);
+    } else {
+      showToast(`"${name}" 수정됨`);
+    }
   } else {
     // 추가
     data.themes[ti].stocks.push(stock);
