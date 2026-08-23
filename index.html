@@ -99,6 +99,17 @@ body{font-family:-apple-system,'Segoe UI',sans-serif;background:#0a0e1a;color:#e
 .rk-badge{display:inline-block;width:20px;height:20px;border-radius:5px;text-align:center;line-height:20px;font-size:10px;font-weight:800;color:#fff;margin-right:6px}
 /* 에러 */
 .error-msg{background:#450a0a;color:#fca5a5;padding:12px 16px;border-radius:10px;font-size:13px;margin:10px 0}
+/* 편집 모달 */
+.modal-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);z-index:200;align-items:center;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal-box{background:#1e293b;border-radius:12px;padding:20px;width:90%;max-width:400px;border:1px solid #334155}
+.modal-box h3{font-size:16px;color:#f1f5f9;margin-bottom:14px}
+.modal-box label{display:block;font-size:12px;color:#94a3b8;margin-bottom:4px;margin-top:10px}
+.modal-box input{width:100%;padding:8px 10px;border-radius:8px;border:1px solid #334155;background:#0f172a;color:#e2e8f0;font-size:13px;outline:none}
+.modal-box input:focus{border-color:#2563eb}
+.modal-btns{display:flex;gap:8px;margin-top:16px;justify-content:flex-end}
+.modal-toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#065f46;color:#6ee7b7;padding:10px 20px;border-radius:10px;font-size:13px;font-weight:600;z-index:300;display:none}
+.stock-table tr.editable:hover td{cursor:pointer;background:#1e293b}
 @media(max-width:600px){
 .theme-grid{grid-template-columns:1fr}
 .header h1{font-size:15px}
@@ -139,6 +150,24 @@ body{font-family:-apple-system,'Segoe UI',sans-serif;background:#0a0e1a;color:#e
 <!-- 서브 뷰 -->
 <div id="subView" style="display:none"></div>
 </div>
+
+<!-- 편집 모달 -->
+<div class="modal-overlay" id="editModal">
+<div class="modal-box">
+<h3 id="editTitle">종목 수정</h3>
+<label>종목명</label>
+<input type="text" id="editName">
+<label>종목코드 (6자리)</label>
+<input type="text" id="editCode" maxlength="6">
+<label>설명 (선택)</label>
+<input type="text" id="editDesc">
+<div class="modal-btns">
+<button class="btn btn-secondary btn-small" onclick="closeEdit()">취소</button>
+<button class="btn btn-primary btn-small" onclick="saveEdit()">저장</button>
+</div>
+</div>
+</div>
+<div class="modal-toast" id="editToast"></div>
 
 <script>
 // ─── 데이터 ───
@@ -401,13 +430,18 @@ function openSub(ti) {
         </tr>
       </thead>
       <tbody>`;
+
+  // 원본 데이터에서 이 종목의 실제 인덱스를 찾기 위해 매핑
+  const origStocks = theme.stocks;
   stocks.forEach((s, i) => {
     const rateClass = s.rate > 0 ? 'up' : s.rate < 0 ? 'down' : 'flat';
     const rankBg = i < 5 ? RC[i] : '';
-    html += `<tr>
+    // 원본 인덱스 찾기 (정렬 전 위치)
+    const origIdx = origStocks.findIndex(os => os.name === s.name && os.code === s.code);
+    html += `<tr class="editable" onclick="openEdit(${ti},${origIdx},'${s.name.replace(/'/g,"\\'")}','${s.code||''}','${(s.desc||'').replace(/'/g,"\\'")}')">
       <td>${i < 5 ? `<span class="rk-badge ${rankBg}">${i+1}</span>` : `<span style="color:#475569">${i+1}</span>`}</td>
       <td>
-        <div class="sn">${s.name} ${s.code ? `<span class="sc">${s.code}</span>` : ''}</div>
+        <div class="sn">${s.name} ${s.code ? `<span class="sc">${s.code}</span>` : ''} <span style="color:#334155;font-size:10px">✏️</span></div>
         ${s.desc ? `<div class="sd">${s.desc}</div>` : ''}
         ${s.tags && s.tags.length ? `<div class="st-tags">${s.tags.map(t => `<span class="st-tag">#${t}</span>`).join('')}</div>` : ''}
       </td>
@@ -578,6 +612,75 @@ async function fetchAll() {
   btn.textContent = '🔄 시세 불러오기';
   setTimeout(() => { pa.style.display = 'none'; }, 2000);
 }
+
+// ─── 종목 편집 (대시보드에서 직접 수정) ───
+let editThemeIdx = -1;
+let editStockIdx = -1;
+let editOldName = '';
+let editOldCode = '';
+
+function openEdit(ti, si, name, code, desc) {
+  editThemeIdx = ti;
+  editStockIdx = si;
+  editOldName = name;
+  editOldCode = code;
+  document.getElementById('editTitle').textContent = `${name} 수정`;
+  document.getElementById('editName').value = name;
+  document.getElementById('editCode').value = code;
+  document.getElementById('editDesc').value = desc;
+  document.getElementById('editModal').classList.add('show');
+}
+
+function closeEdit() {
+  document.getElementById('editModal').classList.remove('show');
+}
+
+function saveEdit() {
+  const newName = document.getElementById('editName').value.trim();
+  const newCode = document.getElementById('editCode').value.trim();
+  const newDesc = document.getElementById('editDesc').value.trim();
+  if (!newName) return;
+
+  const data = loadData();
+  // 현재 테마의 해당 종목 수정
+  if (data.themes[editThemeIdx] && data.themes[editThemeIdx].stocks[editStockIdx]) {
+    data.themes[editThemeIdx].stocks[editStockIdx].name = newName;
+    data.themes[editThemeIdx].stocks[editStockIdx].code = newCode;
+    data.themes[editThemeIdx].stocks[editStockIdx].desc = newDesc;
+  }
+
+  // 다른 테마에 같은 종목 동기화
+  let syncCount = 0;
+  data.themes.forEach((theme, tIdx) => {
+    if (tIdx === editThemeIdx) return;
+    theme.stocks.forEach((s, sIdx) => {
+      const matchByName = editOldName && s.name === editOldName;
+      const matchByCode = editOldCode && s.code === editOldCode;
+      if (matchByName || matchByCode) {
+        data.themes[tIdx].stocks[sIdx].name = newName;
+        data.themes[tIdx].stocks[sIdx].code = newCode;
+        data.themes[tIdx].stocks[sIdx].desc = newDesc;
+        syncCount++;
+      }
+    });
+  });
+
+  saveData(data);
+  closeEdit();
+  openSub(editThemeIdx);
+
+  const toast = document.getElementById('editToast');
+  toast.textContent = syncCount > 0
+    ? `"${newName}" 수정됨 (다른 테마 ${syncCount}곳 동기화)`
+    : `"${newName}" 수정됨`;
+  toast.style.display = 'block';
+  setTimeout(() => { toast.style.display = 'none'; }, 2500);
+}
+
+// 모달 밖 클릭하면 닫기
+document.getElementById('editModal').addEventListener('click', function(e) {
+  if (e.target === this) closeEdit();
+});
 
 // ─── 초기: 저장된 시세 및 필터 상태 불러오기 ───
 showTopOnly = loadTopFilter();
