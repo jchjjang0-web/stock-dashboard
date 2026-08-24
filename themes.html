@@ -20,11 +20,9 @@ body{font-family:-apple-system,'Segoe UI',sans-serif;background:#0a0e1a;color:#e
 .btn-success{background:#065f46;color:#6ee7b7}
 .btn-success:hover{background:#047857}
 .btn-small{padding:5px 10px;font-size:12px}
-
 .container{max-width:800px;margin:0 auto;padding:16px}
 .section-title{font-size:15px;color:#94a3b8;margin:20px 0 10px;display:flex;align-items:center;justify-content:space-between}
 .theme-count{font-size:12px;color:#64748b}
-
 /* 테마 카드 */
 .theme-card{background:#111827;border-radius:12px;margin-bottom:12px;border:1px solid #1e293b;overflow:hidden}
 .theme-header{padding:14px 16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer}
@@ -32,7 +30,6 @@ body{font-family:-apple-system,'Segoe UI',sans-serif;background:#0a0e1a;color:#e
 .theme-name{font-size:16px;font-weight:700;color:#f1f5f9}
 .theme-badge{font-size:12px;color:#64748b;background:#1e293b;padding:3px 10px;border-radius:12px}
 .theme-actions{display:flex;gap:6px}
-
 /* 종목 리스트 */
 .stock-list{border-top:1px solid #1e293b}
 .stock-item{padding:12px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #0f172a}
@@ -44,7 +41,6 @@ body{font-family:-apple-system,'Segoe UI',sans-serif;background:#0a0e1a;color:#e
 .stock-tags{display:flex;gap:4px;margin-top:4px;flex-wrap:wrap}
 .tag{font-size:10px;background:#1e3a5f;color:#60a5fa;padding:2px 8px;border-radius:10px}
 .stock-actions{display:flex;gap:4px}
-
 /* 입력 폼 */
 .modal-bg{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.7);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px}
 .modal{background:#111827;border-radius:16px;padding:24px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;border:1px solid #1e293b}
@@ -57,26 +53,21 @@ body{font-family:-apple-system,'Segoe UI',sans-serif;background:#0a0e1a;color:#e
 .field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .modal-btns{display:flex;gap:8px;margin-top:16px}
 .modal-btns .btn{flex:1}
-
 /* 검색 */
 .search-bar{position:relative;margin-bottom:16px}
 .search-bar input{width:100%;padding:12px 16px 12px 40px;border-radius:12px;border:1px solid #1e293b;background:#111827;color:#e2e8f0;font-size:14px;outline:none}
 .search-bar input:focus{border-color:#2563eb}
 .search-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#64748b}
-
 /* 빈 상태 */
 .empty{text-align:center;padding:40px 20px;color:#64748b}
 .empty-icon{font-size:48px;margin-bottom:12px}
 .empty-text{font-size:14px;line-height:1.6}
-
 /* 확인 모달 */
 .confirm-modal{text-align:center}
 .confirm-modal p{font-size:15px;margin-bottom:20px;color:#e2e8f0;line-height:1.5}
-
 /* 토스트 */
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#065f46;color:#6ee7b7;padding:10px 20px;border-radius:10px;font-size:14px;z-index:999;animation:fadeUp .3s}
 @keyframes fadeUp{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
-
 /* 요약 바 */
 .summary-bar{background:#111827;border-radius:12px;padding:14px 16px;margin-bottom:16px;display:flex;gap:20px;border:1px solid #1e293b}
 .summary-item{text-align:center}
@@ -85,45 +76,37 @@ body{font-family:-apple-system,'Segoe UI',sans-serif;background:#0a0e1a;color:#e
 </style>
 </head>
 <body>
-
 <div class="header">
   <h1>📋 종목 관리</h1>
   <div class="header-btns">
+    <button class="btn btn-secondary" onclick="exportData()">💾 내보내기</button>
     <button class="btn btn-secondary" onclick="importData()">📥 데이터 가져오기</button>
     <button class="btn btn-primary" onclick="location.href='index.html'">📊 대시보드</button>
   </div>
 </div>
-
 <div class="container">
   <!-- 요약 -->
   <div class="summary-bar" id="summaryBar"></div>
-
   <!-- 검색 -->
   <div class="search-bar">
     <span class="search-icon">🔍</span>
     <input type="text" id="searchInput" placeholder="종목명, 종목코드, 태그로 검색" oninput="renderAll()">
   </div>
-
   <!-- 테마 추가 버튼 -->
   <div class="section-title">
     <span>테마 목록 <span class="theme-count" id="themeCount"></span></span>
     <button class="btn btn-primary btn-small" onclick="openAddTheme()">+ 테마 추가</button>
   </div>
-
   <!-- 테마 리스트 -->
   <div id="themeList"></div>
 </div>
-
 <!-- 토스트 -->
 <div id="toast" class="toast" style="display:none"></div>
-
 <!-- 모달 영역 -->
 <div id="modalArea"></div>
-
 <script>
 // ─── 데이터 관리 (localStorage) ───
 const STORAGE_KEY = 'stock-dashboard-data';
-
 function loadData() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -131,13 +114,11 @@ function loadData() {
   } catch(e) {}
   return { themes: [], version: 1 };
 }
-
 function saveData(data) {
   data.version = (data.version || 0) + 1;
   data.lastUpdated = new Date().toISOString();
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
 }
-
 // ─── 토스트 ───
 function showToast(msg) {
   const t = document.getElementById('toast');
@@ -145,10 +126,8 @@ function showToast(msg) {
   t.style.display = 'block';
   setTimeout(() => t.style.display = 'none', 2000);
 }
-
 // ─── 테마 펼치기 상태 ───
 let expandedThemes = {};
-
 // ─── 렌더링 ───
 function renderAll() {
   const data = loadData();
@@ -164,7 +143,6 @@ function renderAll() {
     <div class="summary-item"><div class="summary-num">${withCode}</div><div class="summary-label">코드 입력됨</div></div>
   `;
   document.getElementById('themeCount').textContent = `(${totalThemes}개)`;
-
   // 테마 리스트
   let html = '';
   if (data.themes.length === 0) {
@@ -185,7 +163,6 @@ function renderAll() {
         );
         if (filteredStocks.length === 0 && !theme.name.toLowerCase().includes(query)) return;
       }
-
       const isOpen = expandedThemes[theme.name] || query;
       html += `<div class="theme-card">
         <div class="theme-header" onclick="toggleTheme('${theme.name}')">
@@ -227,12 +204,10 @@ function renderAll() {
   }
   document.getElementById('themeList').innerHTML = html;
 }
-
 function toggleTheme(name) {
   expandedThemes[name] = !expandedThemes[name];
   renderAll();
 }
-
 // ─── 모달 유틸 ───
 function showModal(html) {
   document.getElementById('modalArea').innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal">${html}</div></div>`;
@@ -240,7 +215,6 @@ function showModal(html) {
 function closeModal() {
   document.getElementById('modalArea').innerHTML = '';
 }
-
 // ─── 테마 추가 ───
 function openAddTheme() {
   showModal(`
@@ -256,7 +230,6 @@ function openAddTheme() {
   `);
   setTimeout(() => document.getElementById('newThemeName').focus(), 100);
 }
-
 function addTheme() {
   const name = document.getElementById('newThemeName').value.trim();
   if (!name) return;
@@ -272,7 +245,6 @@ function addTheme() {
   renderAll();
   showToast(`"${name}" 테마 추가됨`);
 }
-
 // ─── 테마 삭제 ───
 function confirmDeleteTheme(ti) {
   const data = loadData();
@@ -288,7 +260,6 @@ function confirmDeleteTheme(ti) {
     </div>
   `);
 }
-
 function deleteTheme(ti) {
   const data = loadData();
   const name = data.themes[ti].name;
@@ -298,7 +269,6 @@ function deleteTheme(ti) {
   renderAll();
   showToast(`"${name}" 테마 삭제됨`);
 }
-
 // ─── 종목 추가 ───
 function openAddStock(ti) {
   const data = loadData();
@@ -339,7 +309,6 @@ function openAddStock(ti) {
   `);
   setTimeout(() => document.getElementById('sName').focus(), 100);
 }
-
 // ─── 종목 수정 ───
 function openEditStock(ti, si) {
   const data = loadData();
@@ -378,7 +347,6 @@ function openEditStock(ti, si) {
     </div>
   `);
 }
-
 function saveStock(ti, si, keepOpen) {
   const name = document.getElementById('sName').value.trim();
   if (!name) { showToast('종목명을 입력해주세요'); return; }
@@ -391,7 +359,6 @@ function saveStock(ti, si, keepOpen) {
     tags: document.getElementById('sTags').value.split(/[,，]+/).map(t => t.trim()).filter(Boolean),
     news: document.getElementById('sNews').value.trim()
   };
-
   const data = loadData();
   if (si !== null && si !== undefined) {
     // 수정: 현재 테마 업데이트
@@ -399,7 +366,6 @@ function saveStock(ti, si, keepOpen) {
     const oldName = oldStock.name;
     const oldCode = oldStock.code;
     data.themes[ti].stocks[si] = { ...oldStock, ...stock };
-
     // 동일 종목(이름 또는 코드 일치)이 다른 테마에도 있으면 같이 수정
     let syncCount = 0;
     data.themes.forEach((theme, tIdx) => {
@@ -413,7 +379,6 @@ function saveStock(ti, si, keepOpen) {
         }
       });
     });
-
     saveData(data);
     closeModal();
     renderAll();
@@ -445,7 +410,6 @@ function saveStock(ti, si, keepOpen) {
     }
   }
 }
-
 // ─── 종목 삭제 ───
 function confirmDeleteStock(ti, si) {
   const data = loadData();
@@ -461,7 +425,6 @@ function confirmDeleteStock(ti, si) {
     </div>
   `);
 }
-
 function deleteStock(ti, si) {
   const data = loadData();
   const name = data.themes[ti].stocks[si].name;
@@ -471,7 +434,21 @@ function deleteStock(ti, si) {
   renderAll();
   showToast(`"${name}" 삭제됨`);
 }
-
+// ─── 데이터 내보내기 (PC의 최신 데이터를 파일로 다운로드) ───
+function exportData() {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (!raw) { showToast('❌ 저장된 데이터가 없습니다'); return; }
+  const blob = new Blob([raw], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'data.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('💾 data.json 다운로드 완료! 이제 GitHub에 올려주세요');
+}
 // ─── 데이터 가져오기 (서버에서 최신 데이터 자동 로드) ───
 async function importData() {
   try {
@@ -487,7 +464,6 @@ async function importData() {
     showToast('❌ 데이터 가져오기 실패: ' + e.message);
   }
 }
-
 // ─── 초기 렌더 ───
 renderAll();
 </script>
