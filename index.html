@@ -317,18 +317,21 @@ function renderMain() {
       ? ratesWithData.reduce((s, st) => s + st.rate, 0) / ratesWithData.length
       : 0;
 
-    return { theme, ti, stocks, top5, tvKing, avgRate };
+    // 1위 종목 상승률 (테마 정렬 기준)
+    const topRate = top5.length > 0 ? top5[0].rate : -Infinity;
+
+    return { theme, ti, stocks, top5, tvKing, avgRate, topRate };
   });
 
-  // 테마 강도 순 정렬 (평균 등락률이 높은 테마가 위로)
-  themeCards.sort((a, b) => b.avgRate - a.avgRate);
+  // 1위 종목 상승률 순 정렬 (가장 화끈하게 오른 종목이 있는 테마가 위로)
+  themeCards.sort((a, b) => b.topRate - a.topRate);
 
   const totalCount = themeCards.length;
   let displayCards = themeCards;
 
   if (showTopOnly) {
-    // 상승 중인(평균 등락률 > 0) 테마만
-    displayCards = themeCards.filter(c => c.avgRate > 0);
+    // 1위 종목이 상승 중인(topRate > 0) 테마만
+    displayCards = themeCards.filter(c => c.topRate > 0);
     document.getElementById('filterInfo').textContent =
       displayCards.length > 0
         ? `상승 테마 ${displayCards.length}개 / 전체 ${totalCount}개`
