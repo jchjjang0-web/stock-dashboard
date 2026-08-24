@@ -72,6 +72,20 @@ body{font-family:-apple-system,'Segoe UI',sans-serif;background:#0a0e1a;color:#e
 .tc-crown .tcv{color:#64748b}
 .tc-empty{color:#475569;font-size:12px;padding:8px 0}
 .tc-arrow{color:#334155;font-size:18px}
+/* 테마 강도 배지 */
+.tc-rank{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex-shrink:0}
+.tc-rank.medal1{background:#facc15;color:#1e293b}
+.tc-rank.medal2{background:#cbd5e1;color:#1e293b}
+.tc-rank.medal3{background:#d97706;color:#1e293b}
+.tc-rank.plain{background:#1e293b;color:#64748b}
+.tc-head-left{display:flex;align-items:center;gap:8px}
+.tc-stats{display:flex;gap:10px;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #1e293b;font-size:12px}
+.tc-stat{display:flex;flex-direction:column;gap:2px}
+.tc-stat-label{color:#64748b;font-size:10px}
+.tc-stat-value{font-weight:700}
+.tc-stat-value.up{color:#ef4444}
+.tc-stat-value.down{color:#3b82f6}
+.tc-stat-value.flat{color:#94a3b8}
 /* 서브 화면 */
 .sub-header{display:flex;align-items:center;gap:12px;margin-bottom:16px}
 .sub-header h2{font-size:20px;font-weight:700;color:#f1f5f9}
@@ -320,11 +334,32 @@ function renderMain() {
     // 1위 종목 상승률 (테마 정렬 기준)
     const topRate = top5.length > 0 ? top5[0].rate : -Infinity;
 
-    return { theme, ti, stocks, top5, tvKing, avgRate, topRate };
+    // 상승 종목 수 / 시세 확인된 종목 수
+    const riseCount = stocks.filter(s => s.rate > 0).length;
+    const dataCount = ratesWithData.length;
+    const riseRatio = dataCount > 0 ? riseCount / dataCount : 0;
+
+    // 테마 전체 거래대금 합계 (돈이 얼마나 몰렸는지)
+    const totalTV = stocks.reduce((sum, s) => sum + (s.tradingValue || 0), 0);
+
+    // 참여 점수 = 상승 종목 수 × 상승 비율
+    // (종목 2~3개짜리 소형 테마가 등락률만 높게 튀는 것보다,
+    //  많은 종목이 함께 동반 상승하는 "진짜 테마"를 우선하기 위한 지표)
+    const participationScore = riseCount * riseRatio;
+
+    return { theme, ti, stocks, top5, tvKing, avgRate, topRate, riseCount, dataCount, riseRatio, totalTV, participationScore };
   });
 
-  // 1위 종목 상승률 순 정렬 (가장 화끈하게 오른 종목이 있는 테마가 위로)
-  themeCards.sort((a, b) => b.topRate - a.topRate);
+  // 참여 점수(상승종목수 × 상승비율) 순 정렬
+  // - 종목 몇 개 안 되는 소형 테마가 등락률만 높은 것보다,
+  //   많은 종목이 함께 동반 상승하는 "규모 있는 진짜 테마"를 위로 올림
+  // - 동점일 경우 1위 종목 상승률로 2차 정렬
+  themeCards.sort((a, b) => {
+    if (b.participationScore !== a.participationScore) {
+      return b.participationScore - a.participationScore;
+    }
+    return b.topRate - a.topRate;
+  });
 
   const totalCount = themeCards.length;
   let displayCards = themeCards;
@@ -353,10 +388,40 @@ function renderMain() {
   }
 
   let html = '<div class="theme-grid">';
-  displayCards.forEach(({ theme, ti, top5, tvKing, avgRate }) => {
-    html += `<div class="tc" onclick="openSub(${ti})">
+  displayCards.forEach(({ theme, ti, top5, tvKing, avgRate, riseCount, dataCount, totalTV }, idx) => {
+    const rank = idx + 1;
+    const medalClass = rank === 1 ? 'medal1' : rank === 2 ? 'medal2' : rank === 3 ? 'medal3' : 'plain';
+    const medalLabel = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : rank;
+
+    // 카드 강도에 따른 은은한 배경 틴트 (평균 등락률 기준)
+    const intensity = Math.min(Math.abs(avgRate) / 5, 1); // 5% 이상이면 최대 강도
+    let tint = 'transparent';
+    if (avgRate > 0.05) tint = `rgba(239,68,68,${(0.04 + intensity * 0.12).toFixed(2)})`;
+    else if (avgRate < -0.05) tint = `rgba(59,130,246,${(0.04 + intensity * 0.12).toFixed(2)})`;
+
+    const rateClass = avgRate > 0.05 ? 'up' : avgRate < -0.05 ? 'down' : 'flat';
+    const riseRatioText = dataCount > 0 ? `${riseCount}/${dataCount}` : '-';
+
+    html += `<div class="tc" style="background-image:linear-gradient(${tint},${tint}),linear-gradient(#111827,#111827)" onclick="openSub(${ti})">
       <div class="tc-head">
-        <span class="tc-name">${theme.name}</span>
+        <div class="tc-head-left">
+          <span class="tc-rank ${medalClass}">${medalLabel}</span>
+          <span class="tc-name">${theme.name}</span>
+        </div>
+      </div>
+      <div class="tc-stats">
+        <div class="tc-stat">
+          <span class="tc-stat-label">평균 등락률</span>
+          <span class="tc-stat-value ${rateClass}">${fRate(avgRate)}</span>
+        </div>
+        <div class="tc-stat">
+          <span class="tc-stat-label">상승 종목</span>
+          <span class="tc-stat-value ${rateClass}">${riseRatioText}</span>
+        </div>
+        <div class="tc-stat">
+          <span class="tc-stat-label">총 거래대금</span>
+          <span class="tc-stat-value">${totalTV ? fTV(totalTV) : '-'}</span>
+        </div>
       </div>
       <div class="tc-list">`;
     if (top5.length > 0) {
