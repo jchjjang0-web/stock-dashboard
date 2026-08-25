@@ -160,6 +160,7 @@ body{font-family:-apple-system,'Segoe UI',sans-serif;background:#0a0e1a;color:#e
 <div class="filter-bar">
 <button class="btn btn-small" id="topToggleBtn" onclick="toggleTopOnly()"></button>
 <button class="btn btn-small" id="tvToggleBtn" onclick="toggleTVMode()"></button>
+<button class="btn btn-small" id="surgeToggleBtn" onclick="toggleSurgeMode()"></button>
 <span class="filter-info" id="filterInfo"></span>
 </div>
 
@@ -197,6 +198,8 @@ let currentView = 'main'; // main | sub
 let currentThemeIdx = -1;
 let showTopOnly = true; // 기본값: 상승 테마만 보기
 let currentMainMode = 'theme'; // theme | tv100 (거래대금 테마 보기)
+let showAllThemes = false; // 테마 "더보기" 펼침 상태
+const THEME_DISPLAY_LIMIT = 8; // 기본으로 보여줄 테마 개수 (캡처처럼 핵심만)
 
 function loadData() {
   try {
@@ -264,8 +267,8 @@ const RC = ['rk1','rk2','rk3','rk4','rk5'];
 // ─── 필터 토글 버튼 갱신 ───
 function renderTopToggleBtn() {
   const btn = document.getElementById('topToggleBtn');
-  // 거래대금 테마 보기 모드에서는 "상승 테마만" 필터를 숨김 (의미가 없어서)
-  if (currentMainMode === 'tv100') {
+  // 거래대금 테마 보기 / 급등 종목 보기 모드에서는 "상승 테마만" 필터를 숨김 (의미가 없어서)
+  if (currentMainMode !== 'theme') {
     btn.style.display = 'none';
     return;
   }
@@ -281,6 +284,7 @@ function renderTopToggleBtn() {
 
 function toggleTopOnly() {
   showTopOnly = !showTopOnly;
+  showAllThemes = false;
   saveTopFilter();
   if (currentView === 'main') renderMain();
 }
@@ -299,7 +303,164 @@ function renderTVToggleBtn() {
 
 function toggleTVMode() {
   currentMainMode = currentMainMode === 'tv100' ? 'theme' : 'tv100';
+  showAllThemes = false;
   if (currentView === 'main') renderMain();
+}
+
+// ─── 급등 종목 보기 (등락률 10%+ & 거래대금 조건 & 대표 테마 자동 판별) ───
+function renderSurgeToggleBtn() {
+  const btn = document.getElementById('surgeToggleBtn');
+  if (currentMainMode === 'surge') {
+    btn.className = 'btn btn-small btn-toggle';
+    btn.textContent = '📋 테마별 보기로 돌아가기';
+  } else {
+    btn.className = 'btn btn-small btn-secondary';
+    btn.textContent = '🚀 급등 종목 (10%+)';
+  }
+}
+
+function toggleSurgeMode() {
+  currentMainMode = currentMainMode === 'surge' ? 'theme' : 'surge';
+  showAllThemes = false;
+  if (currentView === 'main') renderMain();
+}
+
+// 종목이 여러 테마에 속해있을 때, "이 종목이 진짜 어느 테마 때문에 움직였는지" 추정하는 로직.
+// 판단 기준: 소속된 테마들 중, 다른 종목들도 같이 많이 오르고 있는(참여 점수가 높은) 테마를
+// "대표 테마"로 본다. 예) 한전기술이 원전+건설 둘 다 속해있어도, 오늘 원전 테마 전체가
+// 뜨거우면 원전 쪽에 붙인다. 소속 테마가 전부 조용하면(혼자만 튀면) 별도 그룹으로 뺀다.
+const SURGE_MIN_RATE = 10;        // 등락률 10% 이상
+const SURGE_MIN_TV = 100000000;   // 거래대금 1억원 이상 (허수 상승 걸러내기)
+const SURGE_SOLO_GROUP = '📍 단독 상승 (동반 테마 없음)';
+
+function buildSurgeData(data) {
+  // 1) 테마별 "지금 얼마나 뜨거운지" 점수 계산 (대표 테마 판단용)
+  const themeStrength = {};
+  data.themes.forEach(theme => {
+    const rates = theme.stocks
+      .map(s => (s.code && liveData[s.code]) ? liveData[s.code].rate : null)
+      .filter(r => r !== null && r !== 0);
+    const riseCount = rates.filter(r => r > 0).length;
+    const riseRatio = rates.length > 0 ? riseCount / rates.length : 0;
+    themeStrength[theme.name] = { participationScore: riseCount * riseRatio };
+  });
+
+  // 2) 조건(등락률 10%+ & 거래대금 조건) 만족하는 종목 수집 (종목당 한 번만, 소속 테마 목록 기억)
+  const stockMap = {};
+  data.themes.forEach(theme => {
+    theme.stocks.forEach(s => {
+      if (!s.code) return;
+      const live = liveData[s.code];
+      if (!live) return;
+      if (live.rate < SURGE_MIN_RATE) return;
+      if (!live.tradingValue || live.tradingValue < SURGE_MIN_TV) return;
+      if (!stockMap[s.code]) {
+        stockMap[s.code] = {
+          code: s.code, name: s.name, price: live.price,
+          rate: live.rate, tradingValue: live.tradingValue,
+          themes: []
+        };
+      }
+      if (!stockMap[s.code].themes.includes(theme.name)) {
+        stockMap[s.code].themes.push(theme.name);
+      }
+    });
+  });
+  const surgeStocks = Object.values(stockMap);
+
+  // 3) 종목마다 대표 테마 하나만 선택 (참여 점수가 가장 높은 소속 테마)
+  const sectorGroups = {};
+  surgeStocks.forEach(s => {
+    let bestTheme = null, bestScore = 0;
+    s.themes.forEach(themeName => {
+      const score = (themeStrength[themeName] || { participationScore: 0 }).participationScore;
+      if (score > bestScore) { bestScore = score; bestTheme = themeName; }
+    });
+    const groupKey = bestTheme || SURGE_SOLO_GROUP;
+    if (!sectorGroups[groupKey]) sectorGroups[groupKey] = [];
+    sectorGroups[groupKey].push(s);
+  });
+
+  // 4) 그룹 정렬: 종목 수 많은 순 (단독 상승 그룹은 맨 뒤로) → 그룹 내 등락률 높은 순
+  const groupArr = Object.keys(sectorGroups).map(name => {
+    const stocks = sectorGroups[name].slice().sort((a, b) => b.rate - a.rate);
+    return { name, stocks, count: stocks.length };
+  });
+  groupArr.sort((a, b) => {
+    if (a.name === SURGE_SOLO_GROUP) return 1;
+    if (b.name === SURGE_SOLO_GROUP) return -1;
+    return b.count - a.count;
+  });
+
+  return { surgeStocks, groupArr };
+}
+
+function renderSurge(data) {
+  const mainView = document.getElementById('mainView');
+  const { surgeStocks, groupArr } = buildSurgeData(data);
+
+  if (surgeStocks.length === 0) {
+    document.getElementById('filterInfo').textContent = '';
+    mainView.innerHTML = `
+      <div class="empty">
+        <div class="empty-icon">🚀</div>
+        <div class="empty-text">
+          지금은 등락률 ${SURGE_MIN_RATE}% 이상 + 거래대금 ${fTV(SURGE_MIN_TV)} 이상<br>
+          조건을 만족하는 종목이 없어요.<br>
+          시세를 다시 불러오거나 조금 뒤에 확인해보세요.
+        </div>
+      </div>`;
+    return;
+  }
+
+  const limitedGroups = showAllThemes ? groupArr : groupArr.slice(0, THEME_DISPLAY_LIMIT);
+  document.getElementById('filterInfo').textContent =
+    `${SURGE_MIN_RATE}%+ 급등 종목 ${surgeStocks.length}개 · ${groupArr.length}개 그룹 중 ${limitedGroups.length}개 표시`;
+
+  let html = '<div class="theme-grid">';
+  limitedGroups.forEach(({ name, stocks }) => {
+    const ti = data.themes.findIndex(t => t.name === name);
+    const clickable = ti !== -1;
+    html += `<div class="tc" ${clickable ? `onclick="openSub(${ti})"` : 'style="cursor:default"'}>
+      <div class="tc-head">
+        <div class="tc-head-left">
+          <span class="tc-name">${name}</span>
+        </div>
+        <span class="tc-str up">${stocks.length}종목</span>
+      </div>
+      <div class="tc-list">`;
+    stocks.forEach(s => {
+      html += `<div class="tc-row">
+        <span class="tc-sn">${s.name}</span>
+        <span style="color:#94a3b8;font-size:12px;min-width:70px;text-align:right">${fPrice(s.price)}</span>
+        <span class="tc-sr up">+${s.rate.toFixed(2)}%</span>
+        <span class="tc-tv">${fTV(s.tradingValue)}</span>
+      </div>`;
+    });
+    html += `</div></div>`;
+  });
+  html += '</div>';
+  html += renderMoreButton(groupArr.length);
+  mainView.innerHTML = html;
+}
+
+// 테마 카드 "더보기" / "접기" 토글
+function toggleShowAllThemes() {
+  showAllThemes = !showAllThemes;
+  if (currentView === 'main') renderMain();
+}
+
+// 더보기 버튼 HTML 생성 (테마별 뷰, 거래대금 뷰 공통)
+function renderMoreButton(totalCount) {
+  if (totalCount <= THEME_DISPLAY_LIMIT) return '';
+  if (showAllThemes) {
+    return `<div style="text-align:center;margin-top:16px">
+      <button class="btn btn-secondary btn-small" onclick="toggleShowAllThemes()">▲ 접기 (상위 ${THEME_DISPLAY_LIMIT}개만 보기)</button>
+    </div>`;
+  }
+  return `<div style="text-align:center;margin-top:16px">
+    <button class="btn btn-secondary btn-small" onclick="toggleShowAllThemes()">▼ 더보기 (${totalCount - THEME_DISPLAY_LIMIT}개 더 있음)</button>
+  </div>`;
 }
 
 // 등록된 종목들 중 거래대금 상위 100개를 뽑아서 테마별로 묶는다
@@ -373,11 +534,13 @@ function renderTV100(data) {
     return;
   }
 
+  const limitedGroups = showAllThemes ? groupArr : groupArr.slice(0, THEME_DISPLAY_LIMIT);
+
   document.getElementById('filterInfo').textContent =
-    `거래대금 상위 ${top100.length}종목 · ${groupArr.length}개 테마에 분포`;
+    `거래대금 상위 ${top100.length}종목 · ${groupArr.length}개 테마 중 ${limitedGroups.length}개 표시`;
 
   let html = '<div class="theme-grid">';
-  groupArr.forEach(({ name, stocks }) => {
+  limitedGroups.forEach(({ name, stocks }) => {
     const ti = data.themes.findIndex(t => t.name === name);
     if (ti === -1) return;
 
@@ -409,6 +572,7 @@ function renderTV100(data) {
     </div>`;
   });
   html += '</div>';
+  html += renderMoreButton(groupArr.length);
   mainView.innerHTML = html;
 }
 
@@ -423,6 +587,7 @@ function renderMain() {
 
   renderTopToggleBtn();
   renderTVToggleBtn();
+  renderSurgeToggleBtn();
 
   if (data.themes.length === 0) {
     document.getElementById('filterInfo').textContent = '';
@@ -439,9 +604,13 @@ function renderMain() {
     return;
   }
 
-  // 거래대금 테마 보기 모드면 별도 렌더링으로 분기
+  // 거래대금 테마 보기 / 급등 종목 보기 모드면 별도 렌더링으로 분기
   if (currentMainMode === 'tv100') {
     renderTV100(data);
+    return;
+  }
+  if (currentMainMode === 'surge') {
+    renderSurge(data);
     return;
   }
 
@@ -511,12 +680,17 @@ function renderMain() {
   if (showTopOnly) {
     // 1위 종목이 상승 중인(topRate > 0) 테마만
     displayCards = themeCards.filter(c => c.topRate > 0);
+  }
+
+  const limitedCards = showAllThemes ? displayCards : displayCards.slice(0, THEME_DISPLAY_LIMIT);
+
+  if (showTopOnly) {
     document.getElementById('filterInfo').textContent =
       displayCards.length > 0
-        ? `상승 테마 ${displayCards.length}개 / 전체 ${totalCount}개`
+        ? `상승 테마 ${displayCards.length}개 중 ${limitedCards.length}개 표시 / 전체 ${totalCount}개`
         : `지금은 상승 중인 테마가 없어요 (전체 ${totalCount}개)`;
   } else {
-    document.getElementById('filterInfo').textContent = `전체 테마 ${totalCount}개`;
+    document.getElementById('filterInfo').textContent = `전체 테마 ${totalCount}개 중 ${limitedCards.length}개 표시`;
   }
 
   if (displayCards.length === 0) {
@@ -532,7 +706,7 @@ function renderMain() {
   }
 
   let html = '<div class="theme-grid">';
-  displayCards.forEach(({ theme, ti, top5, tvKing, avgRate, riseCount, dataCount, totalTV }, idx) => {
+  limitedCards.forEach(({ theme, ti, top5, tvKing, avgRate, riseCount, dataCount, totalTV }, idx) => {
     const rank = idx + 1;
     const medalClass = rank === 1 ? 'medal1' : rank === 2 ? 'medal2' : rank === 3 ? 'medal3' : 'plain';
     const medalLabel = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : rank;
@@ -590,6 +764,7 @@ function renderMain() {
     </div>`;
   });
   html += '</div>';
+  html += renderMoreButton(displayCards.length);
   mainView.innerHTML = html;
 }
 
