@@ -86,6 +86,27 @@ body{font-family:-apple-system,'Segoe UI',sans-serif;background:#0a0e1a;color:#e
 .tc-stat-value.up{color:#ef4444}
 .tc-stat-value.down{color:#3b82f6}
 .tc-stat-value.flat{color:#94a3b8}
+/* 거래대금 뱃지 (카드 헤더 우측) */
+.tc-tv-badge{background:#1e293b;color:#93c5fd;font-size:12px;font-weight:700;padding:4px 10px;border-radius:8px;white-space:nowrap}
+/* 테마 사유 메모 (티마 스타일 참고) */
+.tc-memo{font-size:11px;color:#64748b;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #1e293b;line-height:1.5;cursor:text}
+.tc-memo:hover{color:#94a3b8}
+.tc-memo.empty{color:#334155;font-style:italic}
+/* 종목 2단 행 (이름/가격 좌측, 등락률/거래대금 우측) + 하단 강도바 */
+.tc-row2{padding:6px 0}
+.tc-row2-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:4px}
+.tc-row2-name{font-size:13px;color:#e2e8f0;font-weight:600}
+.tc-row2-price{font-size:11px;color:#64748b;margin-top:1px}
+.tc-row2-right{text-align:right}
+.tc-row2-rate{font-size:14px;font-weight:800}
+.tc-row2-rate.up{color:#ef4444}
+.tc-row2-rate.down{color:#3b82f6}
+.tc-row2-rate.flat{color:#94a3b8}
+.tc-row2-tv{font-size:11px;color:#64748b;margin-top:1px}
+.tc-bar{height:4px;border-radius:2px;background:#1e293b;overflow:hidden}
+.tc-bar-fill{height:100%;border-radius:2px}
+.tc-bar-fill.up{background:#ef4444}
+.tc-bar-fill.down{background:#3b82f6}
 /* 거래대금 순위 배지 */
 .tv-rk{width:24px;height:18px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;background:#1e3a5f;color:#60a5fa;flex-shrink:0}
 /* 서브 화면 */
@@ -264,6 +285,51 @@ function fTV(v) {
 
 const RC = ['rk1','rk2','rk3','rk4','rk5'];
 
+// ─── 티마 스타일 참고: 종목 2단 행 + 강도바 렌더 ───
+// 강도바 = 오늘 고가~저가 범위 안에서 현재가가 어디쯤 있는지 (오른쪽으로 찰수록 고가권에 붙어있다는 뜻)
+function renderStockRow2(s, extraBadgeHtml) {
+  const rateClass = s.rate > 0 ? 'up' : s.rate < 0 ? 'down' : 'flat';
+  const rateText = (s.rate > 0 ? '+' : '') + s.rate.toFixed(2) + '%';
+  let barFillPct = 50;
+  if (s.high && s.low && s.high > s.low) {
+    barFillPct = Math.max(3, Math.min(100, ((s.price - s.low) / (s.high - s.low)) * 100));
+  }
+  const barColorClass = s.rate >= 0 ? 'up' : 'down';
+  return `<div class="tc-row2">
+    <div class="tc-row2-top">
+      <div>
+        <div class="tc-row2-name">${s.name}${extraBadgeHtml ? ' ' + extraBadgeHtml : ''}</div>
+        <div class="tc-row2-price">${fPrice(s.price)}</div>
+      </div>
+      <div class="tc-row2-right">
+        <div class="tc-row2-rate ${rateClass}">${rateText}</div>
+        <div class="tc-row2-tv">${fTV(s.tradingValue)}</div>
+      </div>
+    </div>
+    <div class="tc-bar"><div class="tc-bar-fill ${barColorClass}" style="width:${barFillPct}%"></div></div>
+  </div>`;
+}
+
+// 테마 사유 메모 HTML (클릭하면 편집, 카드 클릭과 겹치지 않게 stopPropagation)
+function renderThemeMemo(ti, memo) {
+  if (memo && memo.trim()) {
+    return `<div class="tc-memo" onclick="event.stopPropagation();editThemeMemo(${ti})">${memo}</div>`;
+  }
+  return `<div class="tc-memo empty" onclick="event.stopPropagation();editThemeMemo(${ti})">✏️ 왜 떴는지 한 줄로 적어보세요</div>`;
+}
+
+function editThemeMemo(ti) {
+  const data = loadData();
+  if (!data.themes[ti]) return;
+  const current = data.themes[ti].memo || '';
+  const input = prompt(`"${data.themes[ti].name}" - 오늘 왜 뜬 건지 한 줄로 적어보세요`, current);
+  if (input === null) return; // 취소
+  data.themes[ti].memo = input.trim();
+  saveData(data);
+  if (currentView === 'main') renderMain();
+  else if (currentView === 'sub') openSub(ti);
+}
+
 // ─── 필터 토글 버튼 갱신 ───
 function renderTopToggleBtn() {
   const btn = document.getElementById('topToggleBtn');
@@ -358,6 +424,9 @@ function buildSurgeData(data) {
         stockMap[s.code] = {
           code: s.code, name: s.name, price: live.price,
           rate: live.rate, tradingValue: live.tradingValue,
+          high: live.high || 0, low: live.low || 0,
+          foreignNetBuy: live.foreignNetBuy || 0,
+          programNetBuy: live.programNetBuy || 0,
           themes: []
         };
       }
@@ -426,16 +495,21 @@ function renderSurge(data) {
         <div class="tc-head-left">
           <span class="tc-name">${name}</span>
         </div>
-        <span class="tc-str up">${stocks.length}종목</span>
+        <span class="tc-tv-badge">${stocks.length}종목</span>
       </div>
+      ${clickable ? renderThemeMemo(ti, data.themes[ti].memo) : ''}
       <div class="tc-list">`;
     stocks.forEach(s => {
-      html += `<div class="tc-row">
-        <span class="tc-sn">${s.name}</span>
-        <span style="color:#94a3b8;font-size:12px;min-width:70px;text-align:right">${fPrice(s.price)}</span>
-        <span class="tc-sr up">+${s.rate.toFixed(2)}%</span>
-        <span class="tc-tv">${fTV(s.tradingValue)}</span>
-      </div>`;
+      // 외국인 순매수 상태 뱃지 (수급 매매 관점: 외국인이 사고 있는지 한눈에 확인)
+      let foreignBadge;
+      if (s.foreignNetBuy > 0) {
+        foreignBadge = `<span style="font-size:10px;background:#064e3b;color:#6ee7b7;padding:1px 5px;border-radius:6px;vertical-align:middle">외인▲</span>`;
+      } else if (s.foreignNetBuy < 0) {
+        foreignBadge = `<span style="font-size:10px;background:#1e3a5f;color:#93c5fd;padding:1px 5px;border-radius:6px;vertical-align:middle">외인▼</span>`;
+      } else {
+        foreignBadge = `<span style="font-size:10px;color:#475569;vertical-align:middle">-</span>`;
+      }
+      html += renderStockRow2(s, foreignBadge);
     });
     html += `</div></div>`;
   });
@@ -480,6 +554,8 @@ function buildTV100Data(data) {
           price: live.price,
           rate: live.rate,
           tradingValue: live.tradingValue,
+          high: live.high || 0,
+          low: live.low || 0,
           themes: []
         };
       }
@@ -543,25 +619,18 @@ function renderTV100(data) {
   limitedGroups.forEach(({ name, stocks }) => {
     const ti = data.themes.findIndex(t => t.name === name);
     if (ti === -1) return;
+    const groupTV = stocks.reduce((sum, s) => sum + (s.tradingValue || 0), 0);
 
     html += `<div class="tc" onclick="openSub(${ti})">
       <div class="tc-head">
         <div class="tc-head-left">
           <span class="tc-name">${name}</span>
         </div>
-        <span class="tc-str flat">TOP100 ${stocks.length}종목</span>
+        <span class="tc-tv-badge">TOP100 ${stocks.length}종목</span>
       </div>
+      ${renderThemeMemo(ti, data.themes[ti].memo)}
       <div class="tc-list">`;
-    stocks.slice(0, 5).forEach(s => {
-      const rateClass = s.rate > 0 ? 'up' : s.rate < 0 ? 'down' : 'flat';
-      const rateText = s.rate > 0 ? '+' + s.rate.toFixed(2) + '%' : s.rate.toFixed(2) + '%';
-      html += `<div class="tc-row">
-        <div class="tv-rk">${s.tvRank}</div>
-        <span class="tc-sn">${s.name}</span>
-        <span class="tc-sr ${rateClass}">${rateText}</span>
-        <span class="tc-tv">${fTV(s.tradingValue)}</span>
-      </div>`;
-    });
+    stocks.slice(0, 5).forEach(s => { html += renderStockRow2(s); });
     if (stocks.length > 5) {
       html += `<div class="tc-empty">+ ${stocks.length - 5}종목 더 (테마 클릭해서 보기)</div>`;
     }
@@ -624,7 +693,9 @@ function renderMain() {
         change: live ? live.change : 0,
         rate: live ? live.rate : 0,
         up: live ? live.up : null,
-        tradingValue: live ? live.tradingValue : 0
+        tradingValue: live ? live.tradingValue : 0,
+        high: live ? live.high : 0,
+        low: live ? live.low : 0
       };
     });
 
@@ -726,7 +797,9 @@ function renderMain() {
           <span class="tc-rank ${medalClass}">${medalLabel}</span>
           <span class="tc-name">${theme.name}</span>
         </div>
+        <span class="tc-tv-badge">${totalTV ? fTV(totalTV) : '-'}</span>
       </div>
+      ${renderThemeMemo(ti, theme.memo)}
       <div class="tc-stats">
         <div class="tc-stat">
           <span class="tc-stat-label">평균 등락률</span>
@@ -736,26 +809,12 @@ function renderMain() {
           <span class="tc-stat-label">상승 종목</span>
           <span class="tc-stat-value ${rateClass}">${riseRatioText}</span>
         </div>
-        <div class="tc-stat">
-          <span class="tc-stat-label">총 거래대금</span>
-          <span class="tc-stat-value">${totalTV ? fTV(totalTV) : '-'}</span>
-        </div>
       </div>
       <div class="tc-list">`;
     if (top5.length > 0) {
-      top5.forEach((s, j) => {
-        html += `<div class="tc-row">
-          <div class="tc-rk ${RC[j]}">${j+1}</div>
-          <span class="tc-sn">${s.name}</span>
-          <span class="tc-sr up">+${s.rate.toFixed(2)}%</span>
-          <span class="tc-tv">${s.price ? fTV(s.tradingValue) : '-'}</span>
-        </div>`;
-      });
+      top5.forEach(s => { html += renderStockRow2(s); });
     } else {
       html += `<div class="tc-empty">시세를 불러오면 상승 TOP5가 표시됩니다</div>`;
-    }
-    if (tvKing) {
-      html += `<div class="tc-crown">👑 거래대금 <span class="tcn">${tvKing.name}</span> <span class="tcv">${fTV(tvKing.tradingValue)}</span></div>`;
     }
     html += `</div>
       <div style="text-align:right;margin-top:8px">
@@ -811,6 +870,7 @@ function openSub(ti) {
         <span class="sub-arrow" onclick="openSub(${nextIdx})" title="${data_all.themes[nextIdx].name}">다음 ▶</span>
       </div>
     </div>
+    ${renderThemeMemo(ti, theme.memo)}
     <div style="overflow-x:auto">
     <table class="stock-table">
       <thead>
