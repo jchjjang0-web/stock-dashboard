@@ -86,6 +86,8 @@ body{font-family:-apple-system,'Segoe UI',sans-serif;background:#0a0e1a;color:#e
 .tc-stat-value.up{color:#ef4444}
 .tc-stat-value.down{color:#3b82f6}
 .tc-stat-value.flat{color:#94a3b8}
+/* 거래대금 순위 배지 */
+.tv-rk{width:24px;height:18px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;background:#1e3a5f;color:#60a5fa;flex-shrink:0}
 /* 서브 화면 */
 .sub-header{display:flex;align-items:center;gap:12px;margin-bottom:16px}
 .sub-header h2{font-size:20px;font-weight:700;color:#f1f5f9}
@@ -154,9 +156,10 @@ body{font-family:-apple-system,'Segoe UI',sans-serif;background:#0a0e1a;color:#e
 <input type="text" id="searchInput" placeholder="종목명, 태그로 검색" oninput="renderSearch()">
 </div>
 
-<!-- 상승 테마 필터 -->
+<!-- 상승 테마 필터 / 거래대금 테마 보기 -->
 <div class="filter-bar">
 <button class="btn btn-small" id="topToggleBtn" onclick="toggleTopOnly()"></button>
+<button class="btn btn-small" id="tvToggleBtn" onclick="toggleTVMode()"></button>
 <span class="filter-info" id="filterInfo"></span>
 </div>
 
@@ -193,6 +196,7 @@ let liveData = {}; // code -> {price, change, rate, up, tradingValue, ...}
 let currentView = 'main'; // main | sub
 let currentThemeIdx = -1;
 let showTopOnly = true; // 기본값: 상승 테마만 보기
+let currentMainMode = 'theme'; // theme | tv100 (거래대금 테마 보기)
 
 function loadData() {
   try {
@@ -260,6 +264,12 @@ const RC = ['rk1','rk2','rk3','rk4','rk5'];
 // ─── 필터 토글 버튼 갱신 ───
 function renderTopToggleBtn() {
   const btn = document.getElementById('topToggleBtn');
+  // 거래대금 테마 보기 모드에서는 "상승 테마만" 필터를 숨김 (의미가 없어서)
+  if (currentMainMode === 'tv100') {
+    btn.style.display = 'none';
+    return;
+  }
+  btn.style.display = '';
   if (showTopOnly) {
     btn.className = 'btn btn-small btn-toggle';
     btn.textContent = '🔥 상승 테마만 보는 중';
@@ -275,6 +285,133 @@ function toggleTopOnly() {
   if (currentView === 'main') renderMain();
 }
 
+// ─── 거래대금 테마 보기 토글 ───
+function renderTVToggleBtn() {
+  const btn = document.getElementById('tvToggleBtn');
+  if (currentMainMode === 'tv100') {
+    btn.className = 'btn btn-small btn-toggle';
+    btn.textContent = '📋 테마별 보기로 돌아가기';
+  } else {
+    btn.className = 'btn btn-small btn-secondary';
+    btn.textContent = '💰 거래대금 테마 보기';
+  }
+}
+
+function toggleTVMode() {
+  currentMainMode = currentMainMode === 'tv100' ? 'theme' : 'tv100';
+  if (currentView === 'main') renderMain();
+}
+
+// 등록된 종목들 중 거래대금 상위 100개를 뽑아서 테마별로 묶는다
+// (같은 종목이 여러 테마에 속해있으면, 관련된 테마마다 다 표시됨)
+function buildTV100Data(data) {
+  const stockMap = {}; // code -> {code,name,price,rate,tradingValue,themes:[]}
+
+  data.themes.forEach(theme => {
+    theme.stocks.forEach(s => {
+      if (!s.code) return;
+      const live = liveData[s.code];
+      if (!live || !live.tradingValue) return;
+      if (!stockMap[s.code]) {
+        stockMap[s.code] = {
+          code: s.code,
+          name: s.name,
+          price: live.price,
+          rate: live.rate,
+          tradingValue: live.tradingValue,
+          themes: []
+        };
+      }
+      if (!stockMap[s.code].themes.includes(theme.name)) {
+        stockMap[s.code].themes.push(theme.name);
+      }
+    });
+  });
+
+  const allStocks = Object.values(stockMap).sort((a, b) => b.tradingValue - a.tradingValue);
+  const top100 = allStocks.slice(0, 100);
+  top100.forEach((s, i) => { s.tvRank = i + 1; });
+
+  // 테마별로 묶기
+  const themeGroups = {};
+  top100.forEach(s => {
+    s.themes.forEach(themeName => {
+      if (!themeGroups[themeName]) themeGroups[themeName] = [];
+      themeGroups[themeName].push(s);
+    });
+  });
+
+  // 테마 정렬: TOP100 안에 몇 종목이나 들어있는지(count) 순 → 동점이면 최고 거래대금 순
+  const groupArr = Object.keys(themeGroups).map(name => {
+    const stocks = themeGroups[name].slice().sort((a, b) => a.tvRank - b.tvRank);
+    return { name, stocks, maxTV: stocks[0].tradingValue, count: stocks.length };
+  });
+  groupArr.sort((a, b) => {
+    if (b.count !== a.count) return b.count - a.count;
+    return b.maxTV - a.maxTV;
+  });
+
+  return { top100, groupArr };
+}
+
+// 거래대금 테마 보기 렌더
+function renderTV100(data) {
+  const mainView = document.getElementById('mainView');
+  const { top100, groupArr } = buildTV100Data(data);
+
+  if (top100.length === 0) {
+    document.getElementById('filterInfo').textContent = '';
+    mainView.innerHTML = `
+      <div class="empty">
+        <div class="empty-icon">💰</div>
+        <div class="empty-text">
+          아직 거래대금 데이터가 없어요.<br>
+          "🔄 시세 불러오기"를 먼저 눌러주세요.
+        </div>
+        <button class="btn btn-primary" onclick="fetchAll()" style="margin-top:16px">🔄 시세 불러오기</button>
+      </div>`;
+    return;
+  }
+
+  document.getElementById('filterInfo').textContent =
+    `거래대금 상위 ${top100.length}종목 · ${groupArr.length}개 테마에 분포`;
+
+  let html = '<div class="theme-grid">';
+  groupArr.forEach(({ name, stocks }) => {
+    const ti = data.themes.findIndex(t => t.name === name);
+    if (ti === -1) return;
+
+    html += `<div class="tc" onclick="openSub(${ti})">
+      <div class="tc-head">
+        <div class="tc-head-left">
+          <span class="tc-name">${name}</span>
+        </div>
+        <span class="tc-str flat">TOP100 ${stocks.length}종목</span>
+      </div>
+      <div class="tc-list">`;
+    stocks.slice(0, 5).forEach(s => {
+      const rateClass = s.rate > 0 ? 'up' : s.rate < 0 ? 'down' : 'flat';
+      const rateText = s.rate > 0 ? '+' + s.rate.toFixed(2) + '%' : s.rate.toFixed(2) + '%';
+      html += `<div class="tc-row">
+        <div class="tv-rk">${s.tvRank}</div>
+        <span class="tc-sn">${s.name}</span>
+        <span class="tc-sr ${rateClass}">${rateText}</span>
+        <span class="tc-tv">${fTV(s.tradingValue)}</span>
+      </div>`;
+    });
+    if (stocks.length > 5) {
+      html += `<div class="tc-empty">+ ${stocks.length - 5}종목 더 (테마 클릭해서 보기)</div>`;
+    }
+    html += `</div>
+      <div style="text-align:right;margin-top:8px">
+        <span style="color:#334155;font-size:12px">전체 ${data.themes[ti].stocks.length}종목 →</span>
+      </div>
+    </div>`;
+  });
+  html += '</div>';
+  mainView.innerHTML = html;
+}
+
 // ─── 메인 렌더 ───
 function renderMain() {
   const data = loadData();
@@ -285,6 +422,7 @@ function renderMain() {
   currentView = 'main';
 
   renderTopToggleBtn();
+  renderTVToggleBtn();
 
   if (data.themes.length === 0) {
     document.getElementById('filterInfo').textContent = '';
@@ -298,6 +436,12 @@ function renderMain() {
         </div>
         <button class="btn btn-primary" onclick="location.href='themes.html'" style="margin-top:16px">📋 종목 관리로 이동</button>
       </div>`;
+    return;
+  }
+
+  // 거래대금 테마 보기 모드면 별도 렌더링으로 분기
+  if (currentMainMode === 'tv100') {
+    renderTV100(data);
     return;
   }
 
