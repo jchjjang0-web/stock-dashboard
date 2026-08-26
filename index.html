@@ -496,10 +496,6 @@ function renderMain() {
 
   let html = '<div class="theme-grid">';
   limitedCards.forEach(({ theme, ti, top5, tvKing, avgRate, riseCount, dataCount, totalTV }, idx) => {
-    const rank = idx + 1;
-    const medalClass = rank === 1 ? 'medal1' : rank === 2 ? 'medal2' : rank === 3 ? 'medal3' : 'plain';
-    const medalLabel = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : rank;
-
     // 카드 강도에 따른 은은한 배경 틴트 (평균 등락률 기준)
     const intensity = Math.min(Math.abs(avgRate) / 5, 1); // 5% 이상이면 최대 강도
     let tint = 'transparent';
@@ -512,7 +508,6 @@ function renderMain() {
     html += `<div class="tc" style="background-image:linear-gradient(${tint},${tint}),linear-gradient(#ffffff,#ffffff)" onclick="openSub(${ti})">
       <div class="tc-head">
         <div class="tc-head-left">
-          <span class="tc-rank ${medalClass}">${medalLabel}</span>
           <span class="tc-name">${theme.name}</span>
         </div>
       </div>
