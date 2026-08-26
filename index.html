@@ -53,7 +53,7 @@ body,.price,.rate,.tv,.tc-tv,.tc-sr,.tc-str,.tc-stat-value{font-variant-numeric:
 .empty .btn{margin-top:16px}
 /* 메인 화면: 테마 카드 그리드 */
 .theme-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px}
-.tc{background:#ffffff;border-radius:14px;padding:18px;cursor:pointer;border:2px solid #b5b1a4;transition:all .18s;box-shadow:0 1px 2px rgba(28,28,30,.03)}
+.tc{background:#ffffff;border-radius:14px;padding:18px;cursor:pointer;border:1px solid #b5b1a4;transition:all .18s;box-shadow:0 1px 2px rgba(28,28,30,.03)}
 .tc:hover{border-color:#9d998c;transform:translateY(-2px);box-shadow:0 10px 24px rgba(28,28,30,.07)}
 .tc-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
 .tc-name{font-size:16px;font-weight:700;color:#1c1c1e;letter-spacing:-.01em}
@@ -496,16 +496,10 @@ function renderMain() {
 
   let html = '<div class="theme-grid">';
   limitedCards.forEach(({ theme, ti, top5, tvKing, avgRate, riseCount, dataCount, totalTV }, idx) => {
-    // 카드 강도에 따른 은은한 배경 틴트 (평균 등락률 기준)
-    const intensity = Math.min(Math.abs(avgRate) / 5, 1); // 5% 이상이면 최대 강도
-    let tint = 'transparent';
-    if (avgRate > 0.05) tint = `rgba(199,62,58,${(0.04 + intensity * 0.12).toFixed(2)})`;
-    else if (avgRate < -0.05) tint = `rgba(49,89,168,${(0.04 + intensity * 0.12).toFixed(2)})`;
-
     const rateClass = avgRate > 0.05 ? 'up' : avgRate < -0.05 ? 'down' : 'flat';
     const riseRatioText = dataCount > 0 ? `${riseCount}/${dataCount}` : '-';
 
-    html += `<div class="tc" style="background-image:linear-gradient(${tint},${tint}),linear-gradient(#ffffff,#ffffff)" onclick="openSub(${ti})">
+    html += `<div class="tc" onclick="openSub(${ti})">
       <div class="tc-head">
         <div class="tc-head-left">
           <span class="tc-name">${theme.name}</span>
