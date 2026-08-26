@@ -10,7 +10,8 @@
 body{font-family:'Pretendard',-apple-system,'Segoe UI',sans-serif;background:#f6f5f2;color:#1c1c1e;min-height:100vh;-webkit-font-smoothing:antialiased}
 body,.price,.rate,.tv,.tc-tv,.tc-sr,.tc-str,.tc-stat-value{font-variant-numeric:tabular-nums}
 /* 헤더 */
-.header{background:#ffffff;padding:14px 22px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #e9e7e1;position:sticky;top:0;z-index:100}
+.header{background:#ffffff;border-bottom:1px solid #e9e7e1;position:sticky;top:0;z-index:100}
+.header-inner{max-width:1200px;margin:0 auto;padding:14px 22px;display:flex;align-items:center;justify-content:space-between}
 .header h1{font-size:17px;font-weight:700;color:#1c1c1e;letter-spacing:-.01em}
 .header-right{display:flex;gap:8px;align-items:center}
 .btn{padding:8px 14px;border-radius:8px;border:none;font-size:13px;cursor:pointer;font-weight:600;transition:all .15s}
@@ -26,13 +27,14 @@ body,.price,.rate,.tv,.tc-tv,.tc-sr,.tc-str,.tc-stat-value{font-variant-numeric:
 .st.on{background:#e2f2e6;color:#1f7a41}
 .st.ld{background:#fbe9cf;color:#8a5a12}
 /* 상태 바 */
-.status-bar{background:#ffffff;padding:10px 22px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #e9e7e1;flex-wrap:wrap}
+.status-bar{background:#ffffff;border-bottom:1px solid #e9e7e1}
+.status-bar-inner{max-width:1200px;margin:0 auto;padding:10px 22px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .prog-area{display:none;flex:1;min-width:200px}
 .prog-bar{height:4px;background:#e9e7e1;border-radius:2px;overflow:hidden}
 .prog-fill{height:100%;background:#c8952e;width:0%;transition:width .3s}
 .prog-text{font-size:11px;color:#8a8a8f;margin-top:4px}
 /* 컨테이너 */
-.container{max-width:1200px;margin:0 auto;padding:20px 16px}
+.container{max-width:1200px;margin:0 auto;padding:20px 22px}
 /* 검색 + 필터 바 */
 .search-bar{position:relative;margin-bottom:14px}
 .search-bar input{width:100%;padding:13px 16px 13px 42px;border-radius:12px;border:1px solid #e9e7e1;background:#ffffff;color:#1c1c1e;font-size:14px;outline:none;transition:border-color .15s}
@@ -132,6 +134,7 @@ body,.price,.rate,.tv,.tc-tv,.tc-sr,.tc-str,.tc-stat-value{font-variant-numeric:
 </head>
 <body>
 <div class="header">
+<div class="header-inner">
 <h1>📊 주식 테마 대시보드</h1>
 <div class="header-right">
 <span class="st off" id="stB">⏸ 대기중</span>
@@ -140,12 +143,15 @@ body,.price,.rate,.tv,.tc-tv,.tc-sr,.tc-str,.tc-stat-value{font-variant-numeric:
 <button class="btn btn-secondary btn-small" onclick="location.href='themes.html'">📋 종목 관리</button>
 </div>
 </div>
+</div>
 <div class="status-bar">
+<div class="status-bar-inner">
 <div class="prog-area" id="pgA">
 <div class="prog-bar"><div class="prog-fill" id="pgF"></div></div>
 <div class="prog-text" id="pgT"></div>
 </div>
 <div id="errA"></div>
+</div>
 </div>
 <div class="container">
 <!-- 검색 -->
@@ -199,7 +205,7 @@ let currentView = 'main'; // main | sub
 let currentThemeIdx = -1;
 let viewMode = 'theme'; // theme | tv | rate_up | rate_down (상단 4개 탭)
 let showAllThemes = false; // 테마 "더보기" 펼침 상태
-const THEME_DISPLAY_LIMIT = 8; // 기본으로 보여줄 테마 개수 (캡처처럼 핵심만)
+const THEME_DISPLAY_LIMIT = 9; // 기본으로 보여줄 테마 개수
 
 function loadData() {
   try {
