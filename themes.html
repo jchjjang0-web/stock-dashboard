@@ -4,85 +4,89 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>종목 관리</title>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:-apple-system,'Segoe UI',sans-serif;background:#0a0e1a;color:#e2e8f0;min-height:100vh}
-.header{background:#111827;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #1e293b;position:sticky;top:0;z-index:100}
-.header h1{font-size:18px;color:#f1f5f9}
+body{font-family:'Pretendard',-apple-system,'Segoe UI',sans-serif;background:#f6f5f2;color:#1c1c1e;min-height:100vh;-webkit-font-smoothing:antialiased}
+.header{background:#ffffff;border-bottom:1px solid #e9e7e1;position:sticky;top:0;z-index:100}
+.header-inner{max-width:800px;margin:0 auto;padding:14px 22px;display:flex;align-items:center;justify-content:space-between}
+.header h1{font-size:17px;font-weight:700;color:#1c1c1e;letter-spacing:-.01em}
 .header-btns{display:flex;gap:8px}
-.btn{padding:8px 14px;border-radius:8px;border:none;font-size:13px;cursor:pointer;font-weight:600;transition:all .2s}
-.btn-primary{background:#2563eb;color:#fff}
-.btn-primary:hover{background:#1d4ed8}
-.btn-secondary{background:#1e293b;color:#94a3b8}
-.btn-secondary:hover{background:#334155;color:#e2e8f0}
-.btn-danger{background:#991b1b;color:#fca5a5}
-.btn-danger:hover{background:#b91c1c}
-.btn-success{background:#065f46;color:#6ee7b7}
-.btn-success:hover{background:#047857}
+.btn{padding:8px 14px;border-radius:8px;border:none;font-size:13px;cursor:pointer;font-weight:600;transition:all .15s}
+.btn-primary{background:#1c1c1e;color:#fff}
+.btn-primary:hover{background:#000}
+.btn-secondary{background:#f1efe9;color:#5c5c60}
+.btn-secondary:hover{background:#e9e7e1;color:#1c1c1e}
+.btn-danger{background:#fbeceb;color:#c73e3a}
+.btn-danger:hover{background:#f6dcda}
+.btn-success{background:#e2f2e6;color:#1f7a41}
+.btn-success:hover{background:#d3ecd9}
 .btn-small{padding:5px 10px;font-size:12px}
-.container{max-width:800px;margin:0 auto;padding:16px}
-.section-title{font-size:15px;color:#94a3b8;margin:20px 0 10px;display:flex;align-items:center;justify-content:space-between}
-.theme-count{font-size:12px;color:#64748b}
+.container{max-width:800px;margin:0 auto;padding:20px 22px}
+.section-title{font-size:15px;color:#5c5c60;margin:20px 0 10px;display:flex;align-items:center;justify-content:space-between;font-weight:600}
+.theme-count{font-size:12px;color:#a3a198;font-weight:400}
 /* 테마 카드 */
-.theme-card{background:#111827;border-radius:12px;margin-bottom:12px;border:1px solid #1e293b;overflow:hidden}
-.theme-header{padding:14px 16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer}
-.theme-header:hover{background:#1e293b}
-.theme-name{font-size:16px;font-weight:700;color:#f1f5f9}
-.theme-badge{font-size:12px;color:#64748b;background:#1e293b;padding:3px 10px;border-radius:12px}
+.theme-card{background:#ffffff;border-radius:14px;margin-bottom:12px;border:1px solid #d8d5cc;overflow:hidden}
+.theme-header{padding:14px 16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:background .15s}
+.theme-header:hover{background:#faf9f6}
+.theme-name{font-size:16px;font-weight:700;color:#1c1c1e}
+.theme-badge{font-size:12px;color:#a3a198;background:#f1efe9;padding:3px 10px;border-radius:12px}
 .theme-actions{display:flex;gap:6px}
 /* 종목 리스트 */
-.stock-list{border-top:1px solid #1e293b}
-.stock-item{padding:12px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #0f172a}
+.stock-list{border-top:1px solid #f1efe9}
+.stock-item{padding:12px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #f1efe9}
 .stock-item:last-child{border-bottom:none}
-.stock-item:hover{background:#0f172a}
-.stock-name{font-size:14px;font-weight:600;color:#e2e8f0}
-.stock-code{font-size:11px;color:#64748b;margin-left:6px}
-.stock-desc{font-size:12px;color:#64748b;margin-top:2px}
+.stock-item:hover{background:#faf9f6}
+.stock-name{font-size:14px;font-weight:600;color:#1c1c1e}
+.stock-code{font-size:11px;color:#a3a198;margin-left:6px}
+.stock-desc{font-size:12px;color:#8a8a8f;margin-top:2px}
 .stock-tags{display:flex;gap:4px;margin-top:4px;flex-wrap:wrap}
-.tag{font-size:10px;background:#1e3a5f;color:#60a5fa;padding:2px 8px;border-radius:10px}
+.tag{font-size:10px;background:#f1efe9;color:#6b6b6f;padding:2px 8px;border-radius:10px}
 .stock-actions{display:flex;gap:4px}
 /* 입력 폼 */
-.modal-bg{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.7);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px}
-.modal{background:#111827;border-radius:16px;padding:24px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;border:1px solid #1e293b}
-.modal h2{font-size:18px;margin-bottom:16px;color:#f1f5f9}
+.modal-bg{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(28,28,30,.45);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px}
+.modal{background:#ffffff;border-radius:16px;padding:24px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;border:1px solid #eeece6;box-shadow:0 20px 40px rgba(28,28,30,.18)}
+.modal h2{font-size:18px;font-weight:700;margin-bottom:16px;color:#1c1c1e}
 .field{margin-bottom:14px}
-.field label{font-size:12px;color:#94a3b8;display:block;margin-bottom:4px}
-.field input,.field textarea{width:100%;padding:10px 12px;border-radius:8px;border:1px solid #334155;background:#0f172a;color:#e2e8f0;font-size:14px;outline:none}
-.field input:focus,.field textarea:focus{border-color:#2563eb}
+.field label{font-size:12px;color:#5c5c60;display:block;margin-bottom:4px}
+.field input,.field textarea{width:100%;padding:10px 12px;border-radius:8px;border:1px solid #e9e7e1;background:#faf9f6;color:#1c1c1e;font-size:14px;outline:none}
+.field input:focus,.field textarea:focus{border-color:#c8952e}
 .field textarea{resize:vertical;min-height:60px}
 .field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .modal-btns{display:flex;gap:8px;margin-top:16px}
 .modal-btns .btn{flex:1}
 /* 검색 */
 .search-bar{position:relative;margin-bottom:16px}
-.search-bar input{width:100%;padding:12px 16px 12px 40px;border-radius:12px;border:1px solid #1e293b;background:#111827;color:#e2e8f0;font-size:14px;outline:none}
-.search-bar input:focus{border-color:#2563eb}
-.search-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#64748b}
+.search-bar input{width:100%;padding:12px 16px 12px 40px;border-radius:12px;border:1px solid #e9e7e1;background:#ffffff;color:#1c1c1e;font-size:14px;outline:none}
+.search-bar input:focus{border-color:#c8952e}
+.search-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#a3a198}
 /* 빈 상태 */
-.empty{text-align:center;padding:40px 20px;color:#64748b}
-.empty-icon{font-size:48px;margin-bottom:12px}
+.empty{text-align:center;padding:40px 20px;color:#a3a198}
+.empty-icon{font-size:48px;margin-bottom:12px;opacity:.7}
 .empty-text{font-size:14px;line-height:1.6}
 /* 확인 모달 */
 .confirm-modal{text-align:center}
-.confirm-modal p{font-size:15px;margin-bottom:20px;color:#e2e8f0;line-height:1.5}
+.confirm-modal p{font-size:15px;margin-bottom:20px;color:#1c1c1e;line-height:1.5}
 /* 토스트 */
-.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#065f46;color:#6ee7b7;padding:10px 20px;border-radius:10px;font-size:14px;z-index:999;animation:fadeUp .3s}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1c1c1e;color:#fff;padding:11px 22px;border-radius:10px;font-size:14px;z-index:999;animation:fadeUp .3s;box-shadow:0 8px 24px rgba(28,28,30,.25)}
 @keyframes fadeUp{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
 /* 요약 바 */
-.summary-bar{background:#111827;border-radius:12px;padding:14px 16px;margin-bottom:16px;display:flex;gap:20px;border:1px solid #1e293b}
+.summary-bar{background:#ffffff;border-radius:14px;padding:14px 16px;margin-bottom:16px;display:flex;gap:20px;border:1px solid #d8d5cc}
 .summary-item{text-align:center}
-.summary-num{font-size:22px;font-weight:800;color:#60a5fa}
-.summary-label{font-size:11px;color:#64748b;margin-top:2px}
+.summary-num{font-size:22px;font-weight:800;color:#c8952e}
+.summary-label{font-size:11px;color:#a3a198;margin-top:2px}
 </style>
 </head>
 <body>
 <div class="header">
+<div class="header-inner">
   <h1>📋 종목 관리</h1>
   <div class="header-btns">
     <button class="btn btn-secondary" onclick="exportData()">💾 내보내기</button>
     <button class="btn btn-secondary" onclick="importData()">📥 데이터 가져오기</button>
     <button class="btn btn-primary" onclick="location.href='index.html'">📊 대시보드</button>
   </div>
+</div>
 </div>
 <div class="container">
   <!-- 요약 -->
@@ -179,7 +183,7 @@ function renderAll() {
       if (isOpen) {
         html += `<div class="stock-list">`;
         if (filteredStocks.length === 0) {
-          html += `<div class="stock-item"><span style="color:#64748b;font-size:13px">종목이 없습니다. "+ 종목" 버튼으로 추가하세요.</span></div>`;
+          html += `<div class="stock-item"><span style="color:#a3a198;font-size:13px">종목이 없습니다. "+ 종목" 버튼으로 추가하세요.</span></div>`;
         } else {
           filteredStocks.forEach((s, si) => {
             const realIdx = theme.stocks.indexOf(s);
@@ -274,7 +278,7 @@ function openAddStock(ti) {
   const data = loadData();
   const theme = data.themes[ti];
   showModal(`
-    <h2>종목 추가 <span style="color:#60a5fa;font-size:14px">#${theme.name}</span></h2>
+    <h2>종목 추가 <span style="color:#8a5a12;font-size:14px">#${theme.name}</span></h2>
     <div class="field">
       <label>종목명 *</label>
       <input type="text" id="sName" placeholder="삼성전자">
@@ -314,7 +318,7 @@ function openEditStock(ti, si) {
   const data = loadData();
   const s = data.themes[ti].stocks[si];
   showModal(`
-    <h2>종목 수정 <span style="color:#60a5fa;font-size:14px">#${data.themes[ti].name}</span></h2>
+    <h2>종목 수정 <span style="color:#8a5a12;font-size:14px">#${data.themes[ti].name}</span></h2>
     <div class="field">
       <label>종목명 *</label>
       <input type="text" id="sName" value="${s.name}">
