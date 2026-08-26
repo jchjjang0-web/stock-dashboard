@@ -6,130 +6,130 @@
 <title>주식 테마 대시보드</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:-apple-system,'Segoe UI',sans-serif;background:#0a0e1a;color:#e2e8f0;min-height:100vh}
+body{font-family:-apple-system,'Segoe UI',sans-serif;background:#f4f6fa;color:#1e293b;min-height:100vh}
 /* 헤더 */
-.header{background:#111827;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #1e293b;position:sticky;top:0;z-index:100}
-.header h1{font-size:18px;color:#f1f5f9}
+.header{background:#ffffff;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #e5e9f0;position:sticky;top:0;z-index:100}
+.header h1{font-size:18px;color:#1e293b}
 .header-right{display:flex;gap:8px;align-items:center}
 .btn{padding:8px 14px;border-radius:8px;border:none;font-size:13px;cursor:pointer;font-weight:600;transition:all .2s}
 .btn-primary{background:#2563eb;color:#fff}
 .btn-primary:hover{background:#1d4ed8}
-.btn-secondary{background:#1e293b;color:#94a3b8}
-.btn-secondary:hover{background:#334155}
+.btn-secondary{background:#eef1f6;color:#475569}
+.btn-secondary:hover{background:#e2e7f0}
 .btn-small{padding:5px 10px;font-size:12px}
-.btn-toggle{background:#78350f;color:#fbbf24}
-.btn-toggle:hover{background:#92400e}
+.btn-toggle{background:#fef3c7;color:#92400e}
+.btn-toggle:hover{background:#fde68a}
 .st{font-size:11px;padding:4px 10px;border-radius:8px;font-weight:600}
-.st.off{background:#1e293b;color:#64748b}
-.st.on{background:#064e3b;color:#6ee7b7}
-.st.ld{background:#78350f;color:#fbbf24}
+.st.off{background:#eef1f6;color:#94a3b8}
+.st.on{background:#dcfce7;color:#15803d}
+.st.ld{background:#fef3c7;color:#92400e}
 /* 상태 바 */
-.status-bar{background:#111827;padding:10px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #1e293b;flex-wrap:wrap}
+.status-bar{background:#ffffff;padding:10px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid #e5e9f0;flex-wrap:wrap}
 .prog-area{display:none;flex:1;min-width:200px}
-.prog-bar{height:4px;background:#1e293b;border-radius:2px;overflow:hidden}
+.prog-bar{height:4px;background:#e5e9f0;border-radius:2px;overflow:hidden}
 .prog-fill{height:100%;background:#2563eb;width:0%;transition:width .3s}
-.prog-text{font-size:11px;color:#64748b;margin-top:4px}
+.prog-text{font-size:11px;color:#94a3b8;margin-top:4px}
 /* 컨테이너 */
 .container{max-width:1200px;margin:0 auto;padding:16px}
 /* 검색 + 필터 바 */
 .search-bar{position:relative;margin-bottom:10px}
-.search-bar input{width:100%;padding:12px 16px 12px 40px;border-radius:12px;border:1px solid #1e293b;background:#111827;color:#e2e8f0;font-size:14px;outline:none}
+.search-bar input{width:100%;padding:12px 16px 12px 40px;border-radius:12px;border:1px solid #e5e9f0;background:#ffffff;color:#1e293b;font-size:14px;outline:none}
 .search-bar input:focus{border-color:#2563eb}
-.search-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#64748b}
+.search-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#94a3b8}
 .filter-bar{display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap}
-.filter-info{font-size:12px;color:#64748b}
-.sort-tabs{display:flex;gap:6px;background:#111827;padding:4px;border-radius:12px}
-.sort-tab{padding:8px 16px;border-radius:9px;border:none;background:transparent;color:#94a3b8;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s}
-.sort-tab:hover{color:#e2e8f0}
+.filter-info{font-size:12px;color:#94a3b8}
+.sort-tabs{display:flex;gap:6px;background:#ffffff;padding:4px;border-radius:12px;border:1px solid #e5e9f0}
+.sort-tab{padding:8px 16px;border-radius:9px;border:none;background:transparent;color:#64748b;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s}
+.sort-tab:hover{color:#1e293b;background:#f4f6fa}
 .sort-tab.active{background:#eab308;color:#1e293b}
 /* 빈 상태 */
-.empty{text-align:center;padding:60px 20px;color:#64748b}
+.empty{text-align:center;padding:60px 20px;color:#94a3b8}
 .empty-icon{font-size:56px;margin-bottom:16px}
 .empty-text{font-size:15px;line-height:1.8}
 .empty .btn{margin-top:16px}
 /* 메인 화면: 테마 카드 그리드 */
 .theme-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px}
-.tc{background:#111827;border-radius:12px;padding:16px;cursor:pointer;border:1px solid #1e293b;transition:all .2s}
-.tc:hover{border-color:#334155;transform:translateY(-2px)}
+.tc{background:#ffffff;border-radius:12px;padding:16px;cursor:pointer;border:1px solid #e5e9f0;transition:all .2s;box-shadow:0 1px 2px rgba(15,23,42,.04)}
+.tc:hover{border-color:#cbd5e1;transform:translateY(-2px);box-shadow:0 4px 10px rgba(15,23,42,.08)}
 .tc-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
-.tc-name{font-size:16px;font-weight:700;color:#f1f5f9}
+.tc-name{font-size:16px;font-weight:700;color:#1e293b}
 .tc-str{font-size:14px;font-weight:700}
-.tc-str.up{color:#ef4444}
-.tc-str.down{color:#3b82f6}
-.tc-str.flat{color:#64748b}
+.tc-str.up{color:#dc2626}
+.tc-str.down{color:#2563eb}
+.tc-str.flat{color:#94a3b8}
 .tc-list{display:flex;flex-direction:column;gap:6px}
 .tc-row{display:flex;align-items:center;gap:8px}
 .tc-rk{width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff}
-.rk1{background:#ef4444}
+.rk1{background:#dc2626}
 .rk2{background:#f97316}
 .rk3{background:#eab308}
-.rk4{background:#64748b}
-.rk5{background:#475569}
-.tc-sn{font-size:13px;color:#e2e8f0;flex:1}
+.rk4{background:#94a3b8}
+.rk5{background:#cbd5e1}
+.tc-sn{font-size:13px;color:#334155;flex:1}
 .tc-sr{font-size:13px;font-weight:700}
-.tc-sr.up{color:#ef4444}
-.tc-sr.down{color:#3b82f6}
-.tc-sr.flat{color:#64748b}
-.tc-tv{font-size:11px;color:#64748b;min-width:44px;text-align:right}
-.tc-crown{margin-top:8px;padding-top:8px;border-top:1px solid #1e293b;font-size:12px;color:#94a3b8}
-.tc-crown .tcn{color:#fbbf24;font-weight:600}
-.tc-crown .tcv{color:#64748b}
-.tc-empty{color:#475569;font-size:12px;padding:8px 0}
-.tc-arrow{color:#334155;font-size:18px}
+.tc-sr.up{color:#dc2626}
+.tc-sr.down{color:#2563eb}
+.tc-sr.flat{color:#94a3b8}
+.tc-tv{font-size:11px;color:#94a3b8;min-width:44px;text-align:right}
+.tc-crown{margin-top:8px;padding-top:8px;border-top:1px solid #eef1f6;font-size:12px;color:#64748b}
+.tc-crown .tcn{color:#b45309;font-weight:600}
+.tc-crown .tcv{color:#94a3b8}
+.tc-empty{color:#cbd5e1;font-size:12px;padding:8px 0}
+.tc-arrow{color:#cbd5e1;font-size:18px}
 /* 테마 강도 배지 */
 .tc-rank{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex-shrink:0}
 .tc-rank.medal1{background:#facc15;color:#1e293b}
 .tc-rank.medal2{background:#cbd5e1;color:#1e293b}
-.tc-rank.medal3{background:#d97706;color:#1e293b}
-.tc-rank.plain{background:#1e293b;color:#64748b}
+.tc-rank.medal3{background:#d97706;color:#fff}
+.tc-rank.plain{background:#eef1f6;color:#94a3b8}
 .tc-head-left{display:flex;align-items:center;gap:8px}
-.tc-stats{display:flex;gap:10px;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #1e293b;font-size:12px}
+.tc-stats{display:flex;gap:10px;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #eef1f6;font-size:12px}
 .tc-stat{display:flex;flex-direction:column;gap:2px}
-.tc-stat-label{color:#64748b;font-size:10px}
+.tc-stat-label{color:#94a3b8;font-size:10px}
 .tc-stat-value{font-weight:700}
-.tc-stat-value.up{color:#ef4444}
-.tc-stat-value.down{color:#3b82f6}
-.tc-stat-value.flat{color:#94a3b8}
+.tc-stat-value.up{color:#dc2626}
+.tc-stat-value.down{color:#2563eb}
+.tc-stat-value.flat{color:#64748b}
 /* 거래대금 순위 배지 */
-.tv-rk{width:24px;height:18px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;background:#1e3a5f;color:#60a5fa;flex-shrink:0}
+.tv-rk{width:24px;height:18px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;background:#dbeafe;color:#2563eb;flex-shrink:0}
 /* 서브 화면 */
 .sub-header{display:flex;align-items:center;gap:12px;margin-bottom:16px}
-.sub-header h2{font-size:20px;font-weight:700;color:#f1f5f9}
-.sub-back{cursor:pointer;font-size:24px;color:#64748b}
-.sub-back:hover{color:#e2e8f0}
+.sub-header h2{font-size:20px;font-weight:700;color:#1e293b}
+.sub-back{cursor:pointer;font-size:24px;color:#94a3b8}
+.sub-back:hover{color:#1e293b}
 .sub-nav{display:flex;align-items:center;gap:12px;margin-left:auto}
-.sub-arrow{font-size:13px;color:#60a5fa;cursor:pointer;padding:4px 8px;border-radius:6px;background:#1e293b;font-weight:600}
-.sub-arrow:hover{background:#334155;color:#93c5fd}
+.sub-arrow{font-size:13px;color:#2563eb;cursor:pointer;padding:4px 8px;border-radius:6px;background:#eef1f6;font-weight:600}
+.sub-arrow:hover{background:#e2e7f0}
 /* 서브 테이블 */
 .stock-table{width:100%;border-collapse:collapse}
-.stock-table th{text-align:left;padding:10px 12px;font-size:12px;color:#64748b;border-bottom:1px solid #1e293b;position:sticky;top:0;background:#0a0e1a}
-.stock-table td{padding:10px 12px;font-size:13px;border-bottom:1px solid #0f172a}
-.stock-table tr:hover td{background:#111827}
-.sn{font-weight:600;color:#e2e8f0}
-.sc{color:#64748b;font-size:11px}
-.sd{color:#64748b;font-size:11px;margin-top:2px}
+.stock-table th{text-align:left;padding:10px 12px;font-size:12px;color:#94a3b8;border-bottom:1px solid #e5e9f0;position:sticky;top:0;background:#f4f6fa}
+.stock-table td{padding:10px 12px;font-size:13px;border-bottom:1px solid #eef1f6}
+.stock-table tr:hover td{background:#f8fafc}
+.sn{font-weight:600;color:#1e293b}
+.sc{color:#94a3b8;font-size:11px}
+.sd{color:#94a3b8;font-size:11px;margin-top:2px}
 .st-tags{display:flex;gap:3px;flex-wrap:wrap;margin-top:3px}
-.st-tag{font-size:10px;background:#1e3a5f;color:#60a5fa;padding:1px 6px;border-radius:8px}
+.st-tag{font-size:10px;background:#dbeafe;color:#2563eb;padding:1px 6px;border-radius:8px}
 .price{text-align:right}
 .rate{text-align:right;font-weight:700}
-.rate.up{color:#ef4444}
-.rate.down{color:#3b82f6}
-.rate.flat{color:#64748b}
-.tv{text-align:right;color:#94a3b8;font-size:12px}
+.rate.up{color:#dc2626}
+.rate.down{color:#2563eb}
+.rate.flat{color:#94a3b8}
+.tv{text-align:right;color:#64748b;font-size:12px}
 .rk-badge{display:inline-block;width:20px;height:20px;border-radius:5px;text-align:center;line-height:20px;font-size:10px;font-weight:800;color:#fff;margin-right:6px}
 /* 에러 */
-.error-msg{background:#450a0a;color:#fca5a5;padding:12px 16px;border-radius:10px;font-size:13px;margin:10px 0}
+.error-msg{background:#fef2f2;color:#dc2626;padding:12px 16px;border-radius:10px;font-size:13px;margin:10px 0}
 /* 편집 모달 */
-.modal-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.6);z-index:200;align-items:center;justify-content:center}
+.modal-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,.5);z-index:200;align-items:center;justify-content:center}
 .modal-overlay.show{display:flex}
-.modal-box{background:#1e293b;border-radius:12px;padding:20px;width:90%;max-width:400px;border:1px solid #334155;position:relative;z-index:210}
-.modal-box h3{font-size:16px;color:#f1f5f9;margin-bottom:14px}
-.modal-box label{display:block;font-size:12px;color:#94a3b8;margin-bottom:4px;margin-top:10px}
-.modal-box input{width:100%;padding:8px 10px;border-radius:8px;border:1px solid #334155;background:#0f172a;color:#e2e8f0;font-size:13px;outline:none}
+.modal-box{background:#ffffff;border-radius:12px;padding:20px;width:90%;max-width:400px;border:1px solid #e5e9f0;position:relative;z-index:210;box-shadow:0 10px 30px rgba(15,23,42,.15)}
+.modal-box h3{font-size:16px;color:#1e293b;margin-bottom:14px}
+.modal-box label{display:block;font-size:12px;color:#64748b;margin-bottom:4px;margin-top:10px}
+.modal-box input{width:100%;padding:8px 10px;border-radius:8px;border:1px solid #e5e9f0;background:#f8fafc;color:#1e293b;font-size:13px;outline:none}
 .modal-box input:focus{border-color:#2563eb}
 .modal-btns{display:flex;gap:8px;margin-top:16px;justify-content:flex-end}
-.modal-toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#065f46;color:#6ee7b7;padding:10px 20px;border-radius:10px;font-size:13px;font-weight:600;z-index:300;display:none}
-.stock-table tr.editable:hover td{cursor:pointer;background:#1e293b}
+.modal-toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#dcfce7;color:#15803d;padding:10px 20px;border-radius:10px;font-size:13px;font-weight:600;z-index:300;display:none;box-shadow:0 4px 12px rgba(15,23,42,.12)}
+.stock-table tr.editable:hover td{cursor:pointer;background:#f4f6fa}
 @media(max-width:600px){
 .theme-grid{grid-template-columns:1fr}
 .header h1{font-size:15px}
@@ -509,7 +509,7 @@ function renderMain() {
     const rateClass = avgRate > 0.05 ? 'up' : avgRate < -0.05 ? 'down' : 'flat';
     const riseRatioText = dataCount > 0 ? `${riseCount}/${dataCount}` : '-';
 
-    html += `<div class="tc" style="background-image:linear-gradient(${tint},${tint}),linear-gradient(#111827,#111827)" onclick="openSub(${ti})">
+    html += `<div class="tc" style="background-image:linear-gradient(${tint},${tint}),linear-gradient(#ffffff,#ffffff)" onclick="openSub(${ti})">
       <div class="tc-head">
         <div class="tc-head-left">
           <span class="tc-rank ${medalClass}">${medalLabel}</span>
@@ -550,7 +550,7 @@ function renderMain() {
     }
     html += `</div>
       <div style="text-align:right;margin-top:8px">
-        <span style="color:#334155;font-size:12px">${theme.stocks.length}종목 →</span>
+        <span style="color:#cbd5e1;font-size:12px">${theme.stocks.length}종목 →</span>
       </div>
     </div>`;
   });
@@ -625,7 +625,7 @@ function openSub(ti) {
     html += `<tr class="editable" onclick="openEdit(${ti},${origIdx},'${s.name.replace(/'/g,"\\'")}','${s.code||''}','${(s.desc||'').replace(/'/g,"\\'")}')">
       <td>${i < 5 ? `<span class="rk-badge ${rankBg}">${i+1}</span>` : `<span style="color:#475569">${i+1}</span>`}</td>
       <td>
-        <div class="sn">${s.name} ${s.code ? `<span class="sc">${s.code}</span>` : ''} <span style="color:#334155;font-size:10px">✏️</span></div>
+        <div class="sn">${s.name} ${s.code ? `<span class="sc">${s.code}</span>` : ''} <span style="color:#cbd5e1;font-size:10px">✏️</span></div>
         ${s.desc ? `<div class="sd">${s.desc}</div>` : ''}
         ${s.tags && s.tags.length ? `<div class="st-tags">${s.tags.map(t => `<span class="st-tag">#${t}</span>`).join('')}</div>` : ''}
       </td>
