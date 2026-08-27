@@ -477,10 +477,10 @@ function renderMain() {
     // 카드에 보이는 TOP5 상승 종목의 거래대금을 다 더한 값 (2차 정렬 기준)
     const top5TV = top5.reduce((sum, s) => sum + (s.tradingValue || 0), 0);
 
-    // 참여도 점수 = 평균 등락률 × 상승 비율
+    // 참여도 점수 = 상승 종목 수 × 상승 비율
     // → "TOP5 겹치는 종목 몇 개 덕에 반짝 뜬 테마"가 아니라
-    //   테마 전체가 진짜로 같이 움직였는지를 가리는 기준 (중복 테마 필터링에 사용)
-    const strengthScore = avgRate * riseRatio;
+    //   테마 전체(몇백 종목)가 진짜로 폭넓게 같이 움직였는지를 가리는 기준 (중복 테마 필터링에 사용)
+    const strengthScore = riseCount * riseRatio;
 
     return { theme, ti, stocks, top5, tvKing, avgRate, topRate, riseCount, dataCount, riseRatio, totalTV, top5RateSum, top5TV, strengthScore };
   });
@@ -501,9 +501,9 @@ function renderMain() {
       top5CodeSets[i].forEach(code => { if (top5CodeSets[j].has(code)) overlapCount++; });
       if (overlapCount >= OVERLAP_THRESHOLD) {
         const other = themeCards[j];
-        // 겹치는 상대가 나보다 TOP5 등락률 합계가 높으면(동점이면 원래 순서 앞선 쪽 유지) → 나는 숨김
-        if (other.top5RateSum > tc.top5RateSum ||
-            (other.top5RateSum === tc.top5RateSum && j < i)) {
+        // 겹치는 상대가 나보다 참여도 점수(상승종목수×상승비율)가 높으면(동점이면 원래 순서 앞선 쪽 유지) → 나는 숨김
+        if (other.strengthScore > tc.strengthScore ||
+            (other.strengthScore === tc.strengthScore && j < i)) {
           return false;
         }
       }
