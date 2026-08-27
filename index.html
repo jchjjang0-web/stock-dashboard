@@ -499,7 +499,9 @@ function renderMain() {
       if (i === j) continue;
       let overlapCount = 0;
       top5CodeSets[i].forEach(code => { if (top5CodeSets[j].has(code)) overlapCount++; });
-      if (overlapCount >= OVERLAP_THRESHOLD) {
+      // 1위 종목이 서로 같으면(대장주가 동일하면) 그것만으로도 "겹침"으로 인정
+      const sameTop1 = tc.top5[0] && themeCards[j].top5[0] && tc.top5[0].code && tc.top5[0].code === themeCards[j].top5[0].code;
+      if (overlapCount >= OVERLAP_THRESHOLD || sameTop1) {
         const other = themeCards[j];
         // 겹치는 상대가 나보다 참여도 점수(상승종목수×상승비율)가 높으면(동점이면 원래 순서 앞선 쪽 유지) → 나는 숨김
         if (other.strengthScore > tc.strengthScore ||
