@@ -481,11 +481,20 @@ function renderMain() {
     return { theme, ti, stocks, top5, tvKing, avgRate, topRate, riseCount, dataCount, riseRatio, totalTV, top5TV, participationScore };
   });
 
-  // 대장주 등락률(topRate) + TOP5 채움 수(top5.length) + TOP5 거래대금 합계(top5TV)를 더한 점수로 정렬
-  // → 대장주 등락률이 높고, 같이 오르는 종목이 많고, 그 종목들에 돈까지 많이 몰린 테마가 위로
-  themeCards.sort((a, b) =>
-    (b.topRate + b.top5.length + b.top5TV) - (a.topRate + a.top5.length + a.top5TV)
-  );
+  // 숫자를 그대로 더하면 거래대금(억 단위)이 등락률(% 단위)을 완전히 눌러버리므로,
+  // 각 기준별로 "등수"를 매긴 뒤 그 등수 점수를 더하는 방식으로 공평하게 합산한다.
+  const N = themeCards.length;
+
+  // 1) 대장주 등락률(topRate) 기준 등수 → 1등이 가장 높은 점수(N점)
+  const byRate = [...themeCards].sort((a, b) => b.topRate - a.topRate);
+  byRate.forEach((tc, i) => { tc.rateScore = N - i; });
+
+  // 2) TOP5 거래대금 합계(top5TV) 기준 등수 → 1등이 가장 높은 점수(N점)
+  const byTV = [...themeCards].sort((a, b) => b.top5TV - a.top5TV);
+  byTV.forEach((tc, i) => { tc.tvScore = N - i; });
+
+  // 3) 두 등수 점수를 더해서, 합산 점수가 높은 테마가 맨 앞으로
+  themeCards.sort((a, b) => (b.rateScore + b.tvScore) - (a.rateScore + a.tvScore));
 
   const totalCount = themeCards.length;
   const displayCards = themeCards;
