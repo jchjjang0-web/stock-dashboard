@@ -485,35 +485,31 @@ function renderMain() {
     return { theme, ti, stocks, top5, tvKing, avgRate, topRate, riseCount, dataCount, riseRatio, totalTV, top5RateSum, top5TV, strengthScore };
   });
 
-  // ─── TOP5 겹치는 테마 그룹핑 → 그룹당 가장 강한(strengthScore) 테마 1개만 남기기 ───
-  // 두 테마의 TOP5 종목코드가 2개 이상 겹치면 "같은 그룹"(유니온-파인드로 묶음)
+  // ─── TOP5 겹치는 테마 중 더 강한(strengthScore) 테마가 있으면 숨기기 ───
+  // (연쇄적으로 묶지 않고, 서로 직접 TOP5가 2개 이상 겹치는 테마끼리만 비교함)
   function getTop5Codes(tc) {
     return new Set(tc.top5.map(s => s.code).filter(Boolean));
   }
   const OVERLAP_THRESHOLD = 2;
-  const parent = themeCards.map((_, i) => i);
-  function find(x) { while (parent[x] !== x) { parent[x] = parent[parent[x]]; x = parent[x]; } return x; }
-  function union(x, y) { const rx = find(x), ry = find(y); if (rx !== ry) parent[rx] = ry; }
+  const top5CodeSets = themeCards.map(getTop5Codes);
 
-  for (let i = 0; i < themeCards.length; i++) {
-    const setA = getTop5Codes(themeCards[i]);
-    if (setA.size === 0) continue;
-    for (let j = i + 1; j < themeCards.length; j++) {
-      const setB = getTop5Codes(themeCards[j]);
+  const dedupedThemeCards = themeCards.filter((tc, i) => {
+    if (top5CodeSets[i].size === 0) return true; // 겹칠 종목 자체가 없으면 그대로 표시
+    for (let j = 0; j < themeCards.length; j++) {
+      if (i === j) continue;
       let overlapCount = 0;
-      setA.forEach(code => { if (setB.has(code)) overlapCount++; });
-      if (overlapCount >= OVERLAP_THRESHOLD) union(i, j);
+      top5CodeSets[i].forEach(code => { if (top5CodeSets[j].has(code)) overlapCount++; });
+      if (overlapCount >= OVERLAP_THRESHOLD) {
+        const other = themeCards[j];
+        // 겹치는 상대가 나보다 TOP5 등락률 합계가 높으면(동점이면 원래 순서 앞선 쪽 유지) → 나는 숨김
+        if (other.top5RateSum > tc.top5RateSum ||
+            (other.top5RateSum === tc.top5RateSum && j < i)) {
+          return false;
+        }
+      }
     }
-  }
-
-  const groupBest = {};
-  themeCards.forEach((tc, i) => {
-    const root = find(i);
-    if (!groupBest[root] || tc.strengthScore > groupBest[root].strengthScore) {
-      groupBest[root] = tc;
-    }
+    return true;
   });
-  const dedupedThemeCards = Object.values(groupBest);
 
   // TOP5 종목 등락률 합계(top5RateSum)가 높은 테마부터 정렬
   dedupedThemeCards.sort((a, b) => b.top5RateSum - a.top5RateSum);
