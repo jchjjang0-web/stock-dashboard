@@ -472,29 +472,14 @@ function renderMain() {
     // 테마 전체 거래대금 합계 (돈이 얼마나 몰렸는지 — 등락률 동점일 때 2순위 기준)
     const totalTV = stocks.reduce((sum, s) => sum + (s.tradingValue || 0), 0);
 
-    // 카드에 보이는 TOP5 상승 종목의 거래대금 합계
-    const top5TV = top5.reduce((sum, s) => sum + (s.tradingValue || 0), 0);
+    // 카드에 보이는 TOP5 상승 종목의 등락률을 다 더한 값 (테마 정렬 기준)
+    const top5RateSum = top5.reduce((sum, s) => sum + (s.rate || 0), 0);
 
-    // 참여 점수 = 상승 종목 수 × 상승 비율 (참고용으로 남겨둠, 정렬에는 안 씀)
-    const participationScore = riseCount * riseRatio;
-
-    return { theme, ti, stocks, top5, tvKing, avgRate, topRate, riseCount, dataCount, riseRatio, totalTV, top5TV, participationScore };
+    return { theme, ti, stocks, top5, tvKing, avgRate, topRate, riseCount, dataCount, riseRatio, totalTV, top5RateSum };
   });
 
-  // 숫자를 그대로 더하면 거래대금(억 단위)이 등락률(% 단위)을 완전히 눌러버리므로,
-  // 각 기준별로 "등수"를 매긴 뒤 그 등수 점수를 더하는 방식으로 공평하게 합산한다.
-  const N = themeCards.length;
-
-  // 1) 대장주 등락률(topRate) 기준 등수 → 1등이 가장 높은 점수(N점)
-  const byRate = [...themeCards].sort((a, b) => b.topRate - a.topRate);
-  byRate.forEach((tc, i) => { tc.rateScore = N - i; });
-
-  // 2) TOP5 거래대금 합계(top5TV) 기준 등수 → 1등이 가장 높은 점수(N점)
-  const byTV = [...themeCards].sort((a, b) => b.top5TV - a.top5TV);
-  byTV.forEach((tc, i) => { tc.tvScore = N - i; });
-
-  // 3) 두 등수 점수를 더해서, 합산 점수가 높은 테마가 맨 앞으로
-  themeCards.sort((a, b) => (b.rateScore + b.tvScore) - (a.rateScore + a.tvScore));
+  // TOP5(1~5위) 종목의 등락률 합계(top5RateSum)가 높은 테마부터 정렬
+  themeCards.sort((a, b) => b.top5RateSum - a.top5RateSum);
 
   const totalCount = themeCards.length;
   const displayCards = themeCards;
