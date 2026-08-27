@@ -472,14 +472,14 @@ function renderMain() {
     // 테마 전체 거래대금 합계 (돈이 얼마나 몰렸는지 — 등락률 동점일 때 2순위 기준)
     const totalTV = stocks.reduce((sum, s) => sum + (s.tradingValue || 0), 0);
 
-    // 카드에 보이는 TOP5 상승 종목의 등락률을 다 더한 값 (테마 정렬 기준)
-    const top5RateSum = top5.reduce((sum, s) => sum + (s.rate || 0), 0);
+    // 카드에 보이는 TOP5 상승 종목의 거래대금을 다 더한 값 (테마 정렬 기준)
+    const top5TV = top5.reduce((sum, s) => sum + (s.tradingValue || 0), 0);
 
-    return { theme, ti, stocks, top5, tvKing, avgRate, topRate, riseCount, dataCount, riseRatio, totalTV, top5RateSum };
+    return { theme, ti, stocks, top5, tvKing, avgRate, topRate, riseCount, dataCount, riseRatio, totalTV, top5TV };
   });
 
-  // TOP5(1~5위) 종목의 등락률 합계(top5RateSum)가 높은 테마부터 정렬
-  themeCards.sort((a, b) => b.top5RateSum - a.top5RateSum);
+  // TOP5(1~5위) 종목의 거래대금 합계(top5TV)가 큰 테마부터 정렬 (예: 송배전 1등, 반도체소부장 2등...)
+  themeCards.sort((a, b) => b.top5TV - a.top5TV);
 
   const totalCount = themeCards.length;
   const displayCards = themeCards;
