@@ -503,7 +503,7 @@ function renderMain() {
   }
 
   let html = '<div class="theme-grid">';
-  limitedCards.forEach(({ theme, ti, top5, tvKing, avgRate, riseCount, dataCount, totalTV }, idx) => {
+  limitedCards.forEach(({ theme, ti, top5, tvKing, avgRate, riseCount, dataCount, top5TV }, idx) => {
     const rateClass = avgRate > 0.05 ? 'up' : avgRate < -0.05 ? 'down' : 'flat';
     const riseRatioText = dataCount > 0 ? `${riseCount}/${dataCount}` : '-';
 
@@ -523,8 +523,8 @@ function renderMain() {
           <span class="tc-stat-value ${rateClass}">${riseRatioText}</span>
         </div>
         <div class="tc-stat">
-          <span class="tc-stat-label">총 거래대금</span>
-          <span class="tc-stat-value">${totalTV ? fTV(totalTV) : '-'}</span>
+          <span class="tc-stat-label">TOP5 거래대금</span>
+          <span class="tc-stat-value">${top5TV ? fTV(top5TV) : '-'}</span>
         </div>
       </div>
       <div class="tc-list">`;
