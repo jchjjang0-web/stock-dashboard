@@ -480,14 +480,8 @@ function renderMain() {
     return { theme, ti, stocks, top5, tvKing, avgRate, topRate, riseCount, dataCount, riseRatio, totalTV, top5RateSum, top5TV };
   });
 
-  // 1차: TOP5 종목 등락률 합계(top5RateSum) 높은 순
-  // 2차: 등락률 합계가 같으면(동점) TOP5 종목 거래대금 합계(top5TV) 높은 순
-  themeCards.sort((a, b) => {
-    if (b.top5RateSum !== a.top5RateSum) {
-      return b.top5RateSum - a.top5RateSum;
-    }
-    return b.top5TV - a.top5TV;
-  });
+  // TOP5 종목 등락률 합계(top5RateSum)가 높은 테마부터 정렬
+  themeCards.sort((a, b) => b.top5RateSum - a.top5RateSum);
 
   const totalCount = themeCards.length;
   const displayCards = themeCards;
