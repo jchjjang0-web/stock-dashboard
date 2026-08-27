@@ -461,7 +461,7 @@ function renderMain() {
       ? ratesWithData.reduce((s, st) => s + st.rate, 0) / ratesWithData.length
       : 0;
 
-    // 1위 종목 상승률 (테마 정렬 기준)
+    // 1위 종목 상승률 (대장주 상승률 — 테마 정렬 1순위 기준)
     const topRate = top5.length > 0 ? top5[0].rate : -Infinity;
 
     // 상승 종목 수 / 시세 확인된 종목 수
@@ -474,18 +474,20 @@ function renderMain() {
 
     // 참여 점수 = 상승 종목 수 × 상승 비율
     // (종목 2~3개짜리 소형 테마가 등락률만 높게 튀는 것보다,
-    //  많은 종목이 함께 동반 상승하는 "진짜 테마"를 우선하기 위한 지표)
+    //  많은 종목이 함께 동반 상승하는 "진짜 테마"를 우선하기 위한 지표.
+    //  대장주 상승률이 동점일 때 순서를 정하는 2순위 기준으로 사용)
     const participationScore = riseCount * riseRatio;
 
     return { theme, ti, stocks, top5, tvKing, avgRate, topRate, riseCount, dataCount, riseRatio, totalTV, participationScore };
   });
 
-  // 참여 점수(상승종목수 × 상승비율) 순 정렬 — 모든 테마를 다 보여줌 (상승/하락 무관)
+  // 대장주 상승률(topRate) 순 정렬 — 그 테마에서 가장 많이 오른 1개 종목의 등락률이 높은 순.
+  // 동점일 때만 참여도 점수(상승 종목 수 × 상승 비율)로 2차 정렬.
   themeCards.sort((a, b) => {
-    if (b.participationScore !== a.participationScore) {
-      return b.participationScore - a.participationScore;
+    if (b.topRate !== a.topRate) {
+      return b.topRate - a.topRate;
     }
-    return b.topRate - a.topRate;
+    return b.participationScore - a.participationScore;
   });
 
   const totalCount = themeCards.length;
