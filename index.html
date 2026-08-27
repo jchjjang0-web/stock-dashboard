@@ -477,18 +477,53 @@ function renderMain() {
     // 카드에 보이는 TOP5 상승 종목의 거래대금을 다 더한 값 (2차 정렬 기준)
     const top5TV = top5.reduce((sum, s) => sum + (s.tradingValue || 0), 0);
 
-    return { theme, ti, stocks, top5, tvKing, avgRate, topRate, riseCount, dataCount, riseRatio, totalTV, top5RateSum, top5TV };
+    // 참여도 점수 = 평균 등락률 × 상승 비율
+    // → "TOP5 겹치는 종목 몇 개 덕에 반짝 뜬 테마"가 아니라
+    //   테마 전체가 진짜로 같이 움직였는지를 가리는 기준 (중복 테마 필터링에 사용)
+    const strengthScore = avgRate * riseRatio;
+
+    return { theme, ti, stocks, top5, tvKing, avgRate, topRate, riseCount, dataCount, riseRatio, totalTV, top5RateSum, top5TV, strengthScore };
   });
 
-  // TOP5 종목 등락률 합계(top5RateSum)가 높은 테마부터 정렬
-  themeCards.sort((a, b) => b.top5RateSum - a.top5RateSum);
+  // ─── TOP5 겹치는 테마 그룹핑 → 그룹당 가장 강한(strengthScore) 테마 1개만 남기기 ───
+  // 두 테마의 TOP5 종목코드가 2개 이상 겹치면 "같은 그룹"(유니온-파인드로 묶음)
+  function getTop5Codes(tc) {
+    return new Set(tc.top5.map(s => s.code).filter(Boolean));
+  }
+  const OVERLAP_THRESHOLD = 2;
+  const parent = themeCards.map((_, i) => i);
+  function find(x) { while (parent[x] !== x) { parent[x] = parent[parent[x]]; x = parent[x]; } return x; }
+  function union(x, y) { const rx = find(x), ry = find(y); if (rx !== ry) parent[rx] = ry; }
 
-  const totalCount = themeCards.length;
-  const displayCards = themeCards;
+  for (let i = 0; i < themeCards.length; i++) {
+    const setA = getTop5Codes(themeCards[i]);
+    if (setA.size === 0) continue;
+    for (let j = i + 1; j < themeCards.length; j++) {
+      const setB = getTop5Codes(themeCards[j]);
+      let overlapCount = 0;
+      setA.forEach(code => { if (setB.has(code)) overlapCount++; });
+      if (overlapCount >= OVERLAP_THRESHOLD) union(i, j);
+    }
+  }
+
+  const groupBest = {};
+  themeCards.forEach((tc, i) => {
+    const root = find(i);
+    if (!groupBest[root] || tc.strengthScore > groupBest[root].strengthScore) {
+      groupBest[root] = tc;
+    }
+  });
+  const dedupedThemeCards = Object.values(groupBest);
+
+  // TOP5 종목 등락률 합계(top5RateSum)가 높은 테마부터 정렬
+  dedupedThemeCards.sort((a, b) => b.top5RateSum - a.top5RateSum);
+
+  const totalCount = dedupedThemeCards.length;
+  const displayCards = dedupedThemeCards;
   const limitedCards = showAllThemes ? displayCards : displayCards.slice(0, THEME_DISPLAY_LIMIT);
 
   document.getElementById('filterInfo').textContent =
-    `전체 테마 ${totalCount}개 중 ${limitedCards.length}개 표시`;
+    `TOP5 겹치는 테마는 가장 강한 테마만 표시 · ${totalCount}개 중 ${limitedCards.length}개 표시`;
 
   if (displayCards.length === 0) {
     mainView.innerHTML = `
