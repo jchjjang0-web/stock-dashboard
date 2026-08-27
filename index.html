@@ -177,6 +177,7 @@ body,.price,.rate,.tv,.tc-tv,.tc-sr,.tc-str,.tc-stat-value{font-variant-numeric:
 <div class="filter-bar">
 <div class="sort-tabs">
 <button class="sort-tab" id="modeThemeBtn" onclick="setViewMode('theme')">테마보기</button>
+<button class="sort-tab" id="modeAllBtn" onclick="setViewMode('all')">전체보기</button>
 <button class="sort-tab" id="modeTvBtn" onclick="setViewMode('tv')">거래대금 상위</button>
 <button class="sort-tab" id="modeUpBtn" onclick="setViewMode('rate_up')">상승률</button>
 <button class="sort-tab" id="modeDownBtn" onclick="setViewMode('rate_down')">하락률</button>
@@ -216,7 +217,7 @@ const TOP_FILTER_KEY = 'stock-dashboard-top-filter'; // 상승 테마만 보기 
 let liveData = {}; // code -> {price, change, rate, up, tradingValue, ...}
 let currentView = 'main'; // main | sub
 let currentThemeIdx = -1;
-let viewMode = 'theme'; // theme | tv | rate_up | rate_down (상단 4개 탭)
+let viewMode = 'theme'; // theme | all | tv | rate_up | rate_down (상단 5개 탭)
 let showAllThemes = false; // 테마 "더보기" 펼침 상태
 const THEME_DISPLAY_LIMIT = 9; // 기본으로 보여줄 테마 개수
 
@@ -258,7 +259,7 @@ function loadLiveData() {
 function loadViewMode() {
   try {
     const raw = localStorage.getItem(TOP_FILTER_KEY);
-    if (raw === 'theme' || raw === 'tv' || raw === 'rate_up' || raw === 'rate_down') return raw;
+    if (raw === 'theme' || raw === 'all' || raw === 'tv' || raw === 'rate_up' || raw === 'rate_down') return raw;
   } catch(e) {}
   return 'theme'; // 기본값
 }
@@ -284,9 +285,10 @@ function fTV(v) {
 const RC = ['rk1','rk2','rk3','rk4','rk5'];
 
 
-// ─── 뷰 탭 (테마보기 / 거래대금 상위 / 상승률 / 하락률) ───
+// ─── 뷰 탭 (테마보기 / 전체보기 / 거래대금 상위 / 상승률 / 하락률) ───
 function renderViewTabs() {
   document.getElementById('modeThemeBtn').className = 'sort-tab' + (viewMode === 'theme' ? ' active' : '');
+  document.getElementById('modeAllBtn').className = 'sort-tab' + (viewMode === 'all' ? ' active' : '');
   document.getElementById('modeTvBtn').className = 'sort-tab' + (viewMode === 'tv' ? ' active' : '');
   document.getElementById('modeUpBtn').className = 'sort-tab' + (viewMode === 'rate_up' ? ' active' : '');
   document.getElementById('modeDownBtn').className = 'sort-tab' + (viewMode === 'rate_down' ? ' active' : '');
@@ -424,7 +426,7 @@ function renderMain() {
   }
 
   // 거래대금 상위 / 상승률 / 하락률 탭이면 종목 리스트로 렌더
-  if (viewMode !== 'theme') {
+  if (viewMode === 'tv' || viewMode === 'rate_up' || viewMode === 'rate_down') {
     renderStockList(viewMode, data);
     return;
   }
@@ -486,30 +488,35 @@ function renderMain() {
   });
 
   // ─── TOP5 겹치는 테마 중 더 강한(strengthScore) 테마가 있으면 숨기기 ───
-  // (연쇄적으로 묶지 않고, 서로 직접 TOP5가 2개 이상 겹치는 테마끼리만 비교함)
+  // "테마보기" 탭에서만 적용하고, "전체보기" 탭은 중복 제거 없이 다 보여줌
   function getTop5Codes(tc) {
     return new Set(tc.top5.map(s => s.code).filter(Boolean));
   }
   const OVERLAP_THRESHOLD = 2;
-  const top5CodeSets = themeCards.map(getTop5Codes);
 
-  const dedupedThemeCards = themeCards.filter((tc, i) => {
-    if (top5CodeSets[i].size === 0) return true; // 겹칠 종목 자체가 없으면 그대로 표시
-    for (let j = 0; j < themeCards.length; j++) {
-      if (i === j) continue;
-      // 1위 종목(대장주)이 서로 같을 때만 "겹침"으로 인정
-      const sameTop1 = tc.top5[0] && themeCards[j].top5[0] && tc.top5[0].code && tc.top5[0].code === themeCards[j].top5[0].code;
-      if (sameTop1) {
-        const other = themeCards[j];
-        // 겹치는 상대가 나보다 참여도 점수(상승종목수×상승비율)가 높으면(동점이면 원래 순서 앞선 쪽 유지) → 나는 숨김
-        if (other.strengthScore > tc.strengthScore ||
-            (other.strengthScore === tc.strengthScore && j < i)) {
-          return false;
+  let dedupedThemeCards;
+  if (viewMode === 'all') {
+    dedupedThemeCards = themeCards; // 전체보기: 중복 제거 없이 전부 표시
+  } else {
+    const top5CodeSets = themeCards.map(getTop5Codes);
+    dedupedThemeCards = themeCards.filter((tc, i) => {
+      if (top5CodeSets[i].size === 0) return true; // 겹칠 종목 자체가 없으면 그대로 표시
+      for (let j = 0; j < themeCards.length; j++) {
+        if (i === j) continue;
+        // 1위 종목(대장주)이 서로 같을 때만 "겹침"으로 인정
+        const sameTop1 = tc.top5[0] && themeCards[j].top5[0] && tc.top5[0].code && tc.top5[0].code === themeCards[j].top5[0].code;
+        if (sameTop1) {
+          const other = themeCards[j];
+          // 겹치는 상대가 나보다 참여도 점수(상승종목수×상승비율)가 높으면(동점이면 원래 순서 앞선 쪽 유지) → 나는 숨김
+          if (other.strengthScore > tc.strengthScore ||
+              (other.strengthScore === tc.strengthScore && j < i)) {
+            return false;
+          }
         }
       }
-    }
-    return true;
-  });
+      return true;
+    });
+  }
 
   // TOP5 종목 등락률 합계(top5RateSum)가 높은 테마부터 정렬
   dedupedThemeCards.sort((a, b) => b.top5RateSum - a.top5RateSum);
@@ -518,8 +525,9 @@ function renderMain() {
   const displayCards = dedupedThemeCards;
   const limitedCards = showAllThemes ? displayCards : displayCards.slice(0, THEME_DISPLAY_LIMIT);
 
-  document.getElementById('filterInfo').textContent =
-    `TOP5 겹치는 테마는 가장 강한 테마만 표시 · ${totalCount}개 중 ${limitedCards.length}개 표시`;
+  document.getElementById('filterInfo').textContent = viewMode === 'all'
+    ? `전체 테마 ${totalCount}개 중 ${limitedCards.length}개 표시`
+    : `TOP5 겹치는 테마는 가장 강한 테마만 표시 · ${totalCount}개 중 ${limitedCards.length}개 표시`;
 
   if (displayCards.length === 0) {
     mainView.innerHTML = `
