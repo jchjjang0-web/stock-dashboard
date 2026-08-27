@@ -478,8 +478,9 @@ function renderMain() {
     return { theme, ti, stocks, top5, tvKing, avgRate, topRate, riseCount, dataCount, riseRatio, totalTV, participationScore };
   });
 
-  // 대장주(그 테마에서 등락률이 제일 높은 1개 종목)의 등락률(topRate) 순으로 정렬
-  themeCards.sort((a, b) => b.topRate - a.topRate);
+  // 대장주 등락률(topRate) + 상승 종목 개수(riseCount)를 더한 점수로 정렬
+  // → 대장주가 많이 오른 테마 중에서도, 같이 오르는 종목이 많을수록 위로 올라옴
+  themeCards.sort((a, b) => (b.topRate + b.riseCount) - (a.topRate + a.riseCount));
 
   const totalCount = themeCards.length;
   const displayCards = themeCards;
