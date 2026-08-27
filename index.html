@@ -472,15 +472,20 @@ function renderMain() {
     // 테마 전체 거래대금 합계 (돈이 얼마나 몰렸는지 — 등락률 동점일 때 2순위 기준)
     const totalTV = stocks.reduce((sum, s) => sum + (s.tradingValue || 0), 0);
 
+    // 카드에 보이는 TOP5 상승 종목의 거래대금 합계
+    const top5TV = top5.reduce((sum, s) => sum + (s.tradingValue || 0), 0);
+
     // 참여 점수 = 상승 종목 수 × 상승 비율 (참고용으로 남겨둠, 정렬에는 안 씀)
     const participationScore = riseCount * riseRatio;
 
-    return { theme, ti, stocks, top5, tvKing, avgRate, topRate, riseCount, dataCount, riseRatio, totalTV, participationScore };
+    return { theme, ti, stocks, top5, tvKing, avgRate, topRate, riseCount, dataCount, riseRatio, totalTV, top5TV, participationScore };
   });
 
-  // 대장주 등락률(topRate) + 상승 종목 개수(riseCount)를 더한 점수로 정렬
-  // → 대장주가 많이 오른 테마 중에서도, 같이 오르는 종목이 많을수록 위로 올라옴
-  themeCards.sort((a, b) => (b.topRate + b.riseCount) - (a.topRate + a.riseCount));
+  // 대장주 등락률(topRate) + TOP5 채움 수(top5.length) + TOP5 거래대금 합계(top5TV)를 더한 점수로 정렬
+  // → 대장주 등락률이 높고, 같이 오르는 종목이 많고, 그 종목들에 돈까지 많이 몰린 테마가 위로
+  themeCards.sort((a, b) =>
+    (b.topRate + b.top5.length + b.top5TV) - (a.topRate + a.top5.length + a.top5TV)
+  );
 
   const totalCount = themeCards.length;
   const displayCards = themeCards;
