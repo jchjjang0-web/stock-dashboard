@@ -1,1 +1,503 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>거래대금 추적 노트</title>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Pretendard',-apple-system,'Segoe UI',sans-serif;background:#f6f5f2;color:#1c1c1e;min-height:100vh;-webkit-font-smoothing:antialiased}
+.header{background:#ffffff;border-bottom:1px solid #e9e7e1;position:sticky;top:0;z-index:100}
+.header-inner{max-width:900px;margin:0 auto;padding:14px 22px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.header h1{font-size:17px;font-weight:700;color:#1c1c1e;letter-spacing:-.01em}
+.header-btns{display:flex;gap:8px;align-items:center}
+.btn{padding:8px 14px;border-radius:8px;border:none;font-size:13px;cursor:pointer;font-weight:600;transition:all .15s;white-space:nowrap}
+.btn-primary{background:#1c1c1e;color:#fff}
+.btn-primary:hover{background:#000}
+.btn-secondary{background:#f1efe9;color:#5c5c60}
+.btn-secondary:hover{background:#e9e7e1;color:#1c1c1e}
+.btn-danger{background:#fbeceb;color:#c73e3a}
+.btn-danger:hover{background:#f6dcda}
+.btn-success{background:#e2f2e6;color:#1f7a41}
+.btn-success:hover{background:#d3ecd9}
+.btn-amber{background:#f6e6c8;color:#8a5a12}
+.btn-amber:hover{background:#f0dab0}
+.btn-small{padding:5px 10px;font-size:12px}
+.container{max-width:900px;margin:0 auto;padding:20px 22px}
+/* 요약 바 */
+.summary-bar{background:#ffffff;border-radius:14px;padding:14px 16px;margin-bottom:16px;display:flex;gap:20px;border:1px solid #d8d5cc}
+.summary-item{text-align:center}
+.summary-num{font-size:22px;font-weight:800;color:#c8952e}
+.summary-label{font-size:11px;color:#a3a198;margin-top:2px}
+/* 달력 */
+.cal-card{background:#ffffff;border-radius:14px;border:1px solid #d8d5cc;padding:16px;margin-bottom:16px}
+.cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.cal-nav-btns{display:flex;gap:6px;align-items:center}
+.cal-title{font-size:16px;font-weight:700}
+.cal-arrow{width:30px;height:30px;border-radius:8px;border:none;background:#f1efe9;color:#5c5c60;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center}
+.cal-arrow:hover{background:#e9e7e1}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.cal-dow{text-align:center;font-size:11px;color:#a3a198;font-weight:600;padding:4px 0}
+.cal-day{min-height:64px;border-radius:8px;border:1px solid #eeece6;padding:5px;cursor:pointer;position:relative;transition:all .15s;background:#fff}
+.cal-day:hover{border-color:#c8952e;background:#fdf9f2}
+.cal-day.empty{visibility:hidden}
+.cal-day.today{border-color:#c8952e;border-width:2px}
+.cal-day-num{font-size:12px;font-weight:600;color:#5c5c60}
+.cal-day.today .cal-day-num{color:#c8952e}
+.cal-day-chips{margin-top:3px;display:flex;flex-direction:column;gap:2px}
+.cal-chip{font-size:9.5px;padding:1px 4px;border-radius:4px;background:#f1efe9;color:#5c5c60;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cal-chip.status-진입{background:#e2f2e6;color:#1f7a41}
+.cal-chip.status-관찰중{background:#f6e6c8;color:#8a5a12}
+.cal-chip.status-제외{background:#f1efe9;color:#a3a198;text-decoration:line-through}
+.cal-more{font-size:9px;color:#a3a198;padding-left:2px}
+/* 검색/필터 */
+.search-bar{position:relative;margin-bottom:12px}
+.search-bar input{width:100%;padding:12px 16px 12px 40px;border-radius:12px;border:1px solid #e9e7e1;background:#ffffff;color:#1c1c1e;font-size:14px;outline:none}
+.search-bar input:focus{border-color:#c8952e}
+.search-icon{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#a3a198}
+.filter-row{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
+.filter-chip{padding:6px 12px;border-radius:20px;border:1px solid #e9e7e1;background:#fff;font-size:12px;font-weight:600;color:#5c5c60;cursor:pointer}
+.filter-chip.active{background:#1c1c1e;color:#fff;border-color:#1c1c1e}
+/* 리스트 */
+.section-title{font-size:15px;color:#5c5c60;margin:20px 0 10px;font-weight:600}
+.entry-card{background:#ffffff;border-radius:12px;border:1px solid #d8d5cc;padding:12px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.entry-left{flex:1;min-width:0}
+.entry-top{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:3px}
+.entry-name{font-size:14px;font-weight:700;color:#1c1c1e}
+.entry-code{font-size:11px;color:#a3a198}
+.entry-date{font-size:11px;color:#a3a198}
+.status-badge{font-size:10px;padding:2px 8px;border-radius:10px;font-weight:700}
+.status-badge.관찰중{background:#f6e6c8;color:#8a5a12}
+.status-badge.진입{background:#e2f2e6;color:#1f7a41}
+.status-badge.제외{background:#f1efe9;color:#a3a198}
+.entry-meta{font-size:12px;color:#6b6b6f;margin-top:2px}
+.entry-meta b{color:#1c1c1e}
+.entry-note{font-size:12px;color:#8a8a8f;margin-top:4px;line-height:1.4}
+.entry-actions{display:flex;gap:4px;flex-shrink:0}
+/* 모달 */
+.modal-bg{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(28,28,30,.45);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px}
+.modal{background:#ffffff;border-radius:16px;padding:24px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;border:1px solid #eeece6;box-shadow:0 20px 40px rgba(28,28,30,.18)}
+.modal h2{font-size:17px;font-weight:700;margin-bottom:4px;color:#1c1c1e}
+.modal .modal-sub{font-size:12px;color:#a3a198;margin-bottom:16px}
+.field{margin-bottom:14px}
+.field label{font-size:12px;color:#5c5c60;display:block;margin-bottom:4px}
+.field input,.field textarea,.field select{width:100%;padding:10px 12px;border-radius:8px;border:1px solid #e9e7e1;background:#faf9f6;color:#1c1c1e;font-size:14px;outline:none;font-family:inherit}
+.field input:focus,.field textarea:focus,.field select:focus{border-color:#c8952e}
+.field textarea{resize:vertical;min-height:50px}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.status-select{display:flex;gap:6px}
+.status-opt{flex:1;padding:9px;border-radius:8px;border:1px solid #e9e7e1;text-align:center;font-size:12px;font-weight:700;cursor:pointer;color:#8a8a8f}
+.status-opt.sel-관찰중.on{background:#f6e6c8;color:#8a5a12;border-color:#f6e6c8}
+.status-opt.sel-진입.on{background:#e2f2e6;color:#1f7a41;border-color:#e2f2e6}
+.status-opt.sel-제외.on{background:#f1efe9;color:#a3a198;border-color:#f1efe9}
+.modal-btns{display:flex;gap:8px;margin-top:16px}
+.modal-btns .btn{flex:1}
+.day-entry-list{margin-bottom:14px}
+.day-entry-item{padding:10px 12px;border:1px solid #eeece6;border-radius:10px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center}
+.day-entry-item .n{font-size:13px;font-weight:700}
+.day-entry-item .c{font-size:11px;color:#a3a198;margin-left:4px}
+/* 빈 상태 */
+.empty{text-align:center;padding:40px 20px;color:#a3a198}
+.empty-icon{font-size:40px;margin-bottom:10px;opacity:.7}
+.empty-text{font-size:13px;line-height:1.6}
+/* 토스트 */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1c1c1e;color:#fff;padding:11px 22px;border-radius:10px;font-size:14px;z-index:999;animation:fadeUp .3s;box-shadow:0 8px 24px rgba(28,28,30,.25)}
+@keyframes fadeUp{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+</style>
+</head>
+<body>
+<div class="header">
+<div class="header-inner">
+  <h1>📅 거래대금 추적 노트</h1>
+  <div class="header-btns">
+    <button class="btn btn-amber" onclick="openAddModal(todayStr())">+ 오늘 종목 등록</button>
+    <button class="btn btn-secondary" onclick="exportData()">💾 내보내기</button>
+    <button class="btn btn-primary" onclick="location.href='index.html'">📊 대시보드</button>
+  </div>
+</div>
+</div>
+<div class="container">
+  <div class="summary-bar" id="summaryBar"></div>
 
+  <div class="cal-card">
+    <div class="cal-nav">
+      <div class="cal-title" id="calTitle"></div>
+      <div class="cal-nav-btns">
+        <button class="cal-arrow" onclick="changeMonth(-1)">‹</button>
+        <button class="btn btn-secondary btn-small" onclick="goToday()">오늘</button>
+        <button class="cal-arrow" onclick="changeMonth(1)">›</button>
+      </div>
+    </div>
+    <div class="cal-grid" id="calGrid"></div>
+  </div>
+
+  <div class="section-title">📋 전체 기록</div>
+  <div class="search-bar">
+    <span class="search-icon">🔍</span>
+    <input type="text" id="searchInput" placeholder="종목명, 종목코드로 검색" oninput="renderList()">
+  </div>
+  <div class="filter-row" id="filterRow"></div>
+  <div id="listArea"></div>
+</div>
+
+<div id="toast" class="toast" style="display:none"></div>
+<div id="modalArea"></div>
+
+<script>
+// ─── 데이터 ───
+const STORAGE_KEY = 'stock-watchlist-data';
+function loadData(){
+  try{ const raw = localStorage.getItem(STORAGE_KEY); if(raw) return JSON.parse(raw); }catch(e){}
+  return { entries: [] };
+}
+function saveData(data){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+function todayStr(){
+  const d = new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.style.display='block';
+  setTimeout(()=>t.style.display='none', 2000);
+}
+
+// ─── 상태 ───
+let viewYear, viewMonth; // month: 0-11
+{
+  const t = new Date();
+  viewYear = t.getFullYear(); viewMonth = t.getMonth();
+}
+let activeFilter = '전체';
+
+// ─── 달력 렌더 ───
+function changeMonth(diff){
+  viewMonth += diff;
+  if(viewMonth < 0){ viewMonth = 11; viewYear--; }
+  if(viewMonth > 11){ viewMonth = 0; viewYear++; }
+  renderCalendar();
+}
+function goToday(){
+  const t = new Date();
+  viewYear = t.getFullYear(); viewMonth = t.getMonth();
+  renderCalendar();
+}
+function renderCalendar(){
+  const data = loadData();
+  document.getElementById('calTitle').textContent = `${viewYear}년 ${viewMonth+1}월`;
+
+  const firstDay = new Date(viewYear, viewMonth, 1).getDay();
+  const daysInMonth = new Date(viewYear, viewMonth+1, 0).getDate();
+  const dowNames = ['일','월','화','수','목','금','토'];
+
+  let html = dowNames.map(d=>`<div class="cal-dow">${d}</div>`).join('');
+
+  for(let i=0;i<firstDay;i++) html += `<div class="cal-day empty"></div>`;
+
+  const today = todayStr();
+  for(let day=1; day<=daysInMonth; day++){
+    const dateStr = `${viewYear}-${String(viewMonth+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    const dayEntries = data.entries.filter(e=>e.date===dateStr);
+    const isToday = dateStr === today;
+    let chips = dayEntries.slice(0,2).map(e=>`<div class="cal-chip status-${e.status}">${e.name}</div>`).join('');
+    if(dayEntries.length > 2) chips += `<div class="cal-more">+${dayEntries.length-2}개</div>`;
+    html += `<div class="cal-day ${isToday?'today':''}" onclick="openDayModal('${dateStr}')">
+      <div class="cal-day-num">${day}</div>
+      <div class="cal-day-chips">${chips}</div>
+    </div>`;
+  }
+  document.getElementById('calGrid').innerHTML = html;
+  renderSummary();
+  renderFilters();
+  renderList();
+}
+
+// ─── 요약 ───
+function renderSummary(){
+  const data = loadData();
+  const monthPrefix = `${viewYear}-${String(viewMonth+1).padStart(2,'0')}`;
+  const monthEntries = data.entries.filter(e=>e.date.startsWith(monthPrefix));
+  const enteredCount = monthEntries.filter(e=>e.status==='진입').length;
+  const totalCount = data.entries.length;
+  document.getElementById('summaryBar').innerHTML = `
+    <div class="summary-item"><div class="summary-num">${monthEntries.length}</div><div class="summary-label">이번달 등록</div></div>
+    <div class="summary-item"><div class="summary-num">${enteredCount}</div><div class="summary-label">이번달 진입</div></div>
+    <div class="summary-item"><div class="summary-num">${totalCount}</div><div class="summary-label">전체 누적</div></div>
+  `;
+}
+
+// ─── 필터 ───
+function renderFilters(){
+  const opts = ['전체','관찰중','진입','제외'];
+  document.getElementById('filterRow').innerHTML = opts.map(o=>
+    `<div class="filter-chip ${activeFilter===o?'active':''}" onclick="setFilter('${o}')">${o}</div>`
+  ).join('');
+}
+function setFilter(f){
+  activeFilter = f;
+  renderFilters();
+  renderList();
+}
+
+// ─── 전체 리스트 ───
+function renderList(){
+  const data = loadData();
+  const query = document.getElementById('searchInput').value.toLowerCase().trim();
+  let list = [...data.entries].sort((a,b)=> b.date.localeCompare(a.date) || (b.createdAt||0)-(a.createdAt||0));
+
+  if(activeFilter !== '전체') list = list.filter(e=>e.status===activeFilter);
+  if(query) list = list.filter(e=> e.name.toLowerCase().includes(query) || (e.code && e.code.includes(query)) );
+
+  if(list.length === 0){
+    document.getElementById('listArea').innerHTML = `<div class="empty">
+      <div class="empty-icon">📭</div>
+      <div class="empty-text">등록된 종목이 없어요<br>달력에서 날짜를 클릭해 추가해보세요</div>
+    </div>`;
+    return;
+  }
+
+  document.getElementById('listArea').innerHTML = list.map(e=>{
+    const amountText = e.amount ? `${e.amount}억` : '-';
+    const rateText = e.rate ? `${e.rate>0?'+':''}${e.rate}%` : '-';
+    return `<div class="entry-card">
+      <div class="entry-left">
+        <div class="entry-top">
+          <span class="entry-name">${e.name}</span>
+          ${e.code?`<span class="entry-code">${e.code}</span>`:''}
+          <span class="status-badge ${e.status}">${e.status}</span>
+        </div>
+        <div class="entry-date">${e.date}</div>
+        <div class="entry-meta">거래대금 <b>${amountText}</b> · 등락률 <b>${rateText}</b></div>
+        ${e.note?`<div class="entry-note">${e.note}</div>`:''}
+      </div>
+      <div class="entry-actions">
+        <button class="btn btn-secondary btn-small" onclick="openEditModal('${e.id}')">수정</button>
+        <button class="btn btn-danger btn-small" onclick="confirmDelete('${e.id}')">삭제</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ─── 모달 유틸 ───
+function showModal(html){
+  document.getElementById('modalArea').innerHTML = `<div class="modal-bg" onclick="if(event.target===this)closeModal()"><div class="modal">${html}</div></div>`;
+}
+function closeModal(){ document.getElementById('modalArea').innerHTML = ''; }
+
+// ─── 날짜 클릭 → 그 날 등록된 종목 + 추가 버튼 ───
+function openDayModal(dateStr){
+  const data = loadData();
+  const dayEntries = data.entries.filter(e=>e.date===dateStr).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+  let listHtml = '';
+  if(dayEntries.length===0){
+    listHtml = `<div style="font-size:13px;color:#a3a198;margin-bottom:14px">아직 등록된 종목이 없어요.</div>`;
+  } else {
+    listHtml = `<div class="day-entry-list">` + dayEntries.map(e=>`
+      <div class="day-entry-item">
+        <div><span class="n">${e.name}</span><span class="c">${e.code||''} · ${e.amount||'-'}억</span></div>
+        <div style="display:flex;gap:4px;align-items:center">
+          <span class="status-badge ${e.status}">${e.status}</span>
+          <button class="btn btn-secondary btn-small" onclick="openEditModal('${e.id}')">수정</button>
+        </div>
+      </div>
+    `).join('') + `</div>`;
+  }
+  showModal(`
+    <h2>${dateStr}</h2>
+    <div class="modal-sub">이 날짜에 등록된 종목</div>
+    ${listHtml}
+    <div class="modal-btns">
+      <button class="btn btn-secondary" onclick="closeModal()">닫기</button>
+      <button class="btn btn-primary" onclick="openAddModal('${dateStr}')">+ 종목 추가</button>
+    </div>
+  `);
+}
+
+// ─── 종목 추가 ───
+function openAddModal(dateStr){
+  showModal(`
+    <h2>종목 등록</h2>
+    <div class="modal-sub">${dateStr}</div>
+    <div class="field">
+      <label>종목명 *</label>
+      <input type="text" id="fName" placeholder="예: 삼성전자">
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>종목코드</label>
+        <input type="text" id="fCode" placeholder="005930" maxlength="6">
+      </div>
+      <div class="field">
+        <label>거래대금(억)</label>
+        <input type="text" id="fAmount" placeholder="500" inputmode="numeric">
+      </div>
+    </div>
+    <div class="field">
+      <label>당일 등락률(%)</label>
+      <input type="text" id="fRate" placeholder="예: 15.3 또는 -8.2" inputmode="decimal">
+    </div>
+    <div class="field">
+      <label>상태</label>
+      <div class="status-select" id="statusSelect">
+        <div class="status-opt sel-관찰중 on" data-v="관찰중" onclick="pickStatus(this)">관찰중</div>
+        <div class="status-opt sel-진입" data-v="진입" onclick="pickStatus(this)">진입</div>
+        <div class="status-opt sel-제외" data-v="제외" onclick="pickStatus(this)">제외</div>
+      </div>
+    </div>
+    <div class="field">
+      <label>메모</label>
+      <textarea id="fNote" placeholder="터진 이유, 특징, 다음날 흐름 등"></textarea>
+    </div>
+    <input type="hidden" id="fDate" value="${dateStr}">
+    <div class="modal-btns">
+      <button class="btn btn-secondary" onclick="closeModal()">취소</button>
+      <button class="btn btn-success" onclick="saveEntry(null, true)">등록하고 계속</button>
+      <button class="btn btn-primary" onclick="saveEntry(null, false)">등록</button>
+    </div>
+  `);
+  setTimeout(()=>document.getElementById('fName').focus(), 100);
+}
+
+// ─── 종목 수정 ───
+function openEditModal(id){
+  const data = loadData();
+  const e = data.entries.find(x=>x.id===id);
+  if(!e) return;
+  showModal(`
+    <h2>종목 수정</h2>
+    <div class="modal-sub">${e.date}</div>
+    <div class="field">
+      <label>종목명 *</label>
+      <input type="text" id="fName" value="${e.name}">
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>종목코드</label>
+        <input type="text" id="fCode" value="${e.code||''}" maxlength="6">
+      </div>
+      <div class="field">
+        <label>거래대금(억)</label>
+        <input type="text" id="fAmount" value="${e.amount||''}" inputmode="numeric">
+      </div>
+    </div>
+    <div class="field">
+      <label>당일 등락률(%)</label>
+      <input type="text" id="fRate" value="${e.rate||''}" inputmode="decimal">
+    </div>
+    <div class="field">
+      <label>상태</label>
+      <div class="status-select" id="statusSelect">
+        <div class="status-opt sel-관찰중 ${e.status==='관찰중'?'on':''}" data-v="관찰중" onclick="pickStatus(this)">관찰중</div>
+        <div class="status-opt sel-진입 ${e.status==='진입'?'on':''}" data-v="진입" onclick="pickStatus(this)">진입</div>
+        <div class="status-opt sel-제외 ${e.status==='제외'?'on':''}" data-v="제외" onclick="pickStatus(this)">제외</div>
+      </div>
+    </div>
+    <div class="field">
+      <label>메모</label>
+      <textarea id="fNote">${e.note||''}</textarea>
+    </div>
+    <input type="hidden" id="fDate" value="${e.date}">
+    <div class="modal-btns">
+      <button class="btn btn-secondary" onclick="closeModal()">취소</button>
+      <button class="btn btn-primary" onclick="saveEntry('${id}', false)">수정 완료</button>
+    </div>
+  `);
+}
+
+function pickStatus(el){
+  const wrap = document.getElementById('statusSelect');
+  wrap.querySelectorAll('.status-opt').forEach(o=>o.classList.remove('on'));
+  el.classList.add('on');
+}
+
+function saveEntry(id, keepOpen){
+  const name = document.getElementById('fName').value.trim();
+  if(!name){ showToast('종목명을 입력해주세요'); return; }
+  const statusEl = document.querySelector('#statusSelect .status-opt.on');
+  const status = statusEl ? statusEl.dataset.v : '관찰중';
+  const date = document.getElementById('fDate').value;
+
+  const entry = {
+    name,
+    code: document.getElementById('fCode').value.trim(),
+    amount: document.getElementById('fAmount').value.trim(),
+    rate: document.getElementById('fRate').value.trim(),
+    note: document.getElementById('fNote').value.trim(),
+    status,
+    date
+  };
+
+  const data = loadData();
+  if(id){
+    const idx = data.entries.findIndex(x=>x.id===id);
+    if(idx>-1) data.entries[idx] = {...data.entries[idx], ...entry};
+    saveData(data);
+    closeModal();
+    renderCalendar();
+    showToast(`"${name}" 수정됨`);
+  } else {
+    entry.id = 'e' + Date.now() + Math.random().toString(36).slice(2,7);
+    entry.createdAt = Date.now();
+    data.entries.push(entry);
+    saveData(data);
+    if(keepOpen){
+      document.getElementById('fName').value = '';
+      document.getElementById('fCode').value = '';
+      document.getElementById('fAmount').value = '';
+      document.getElementById('fRate').value = '';
+      document.getElementById('fNote').value = '';
+      document.getElementById('fName').focus();
+      renderCalendar();
+      showToast(`"${name}" 등록됨 — 계속 입력하세요`);
+    } else {
+      closeModal();
+      renderCalendar();
+      showToast(`"${name}" 등록됨`);
+    }
+  }
+}
+
+function confirmDelete(id){
+  const data = loadData();
+  const e = data.entries.find(x=>x.id===id);
+  if(!e) return;
+  showModal(`
+    <div style="text-align:center">
+      <h2>종목 삭제</h2>
+      <p style="font-size:14px;margin:14px 0;color:#5c5c60">"${e.name}"을(를) 삭제할까요?</p>
+      <div class="modal-btns">
+        <button class="btn btn-secondary" onclick="closeModal()">취소</button>
+        <button class="btn btn-danger" onclick="doDelete('${id}')">삭제</button>
+      </div>
+    </div>
+  `);
+}
+function doDelete(id){
+  const data = loadData();
+  data.entries = data.entries.filter(x=>x.id!==id);
+  saveData(data);
+  closeModal();
+  renderCalendar();
+  showToast('삭제됨');
+}
+
+// ─── 내보내기 ───
+function exportData(){
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if(!raw){ showToast('❌ 저장된 데이터가 없습니다'); return; }
+  const blob = new Blob([raw], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'watchlist.json';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('💾 watchlist.json 다운로드 완료!');
+}
+
+// ─── 초기 렌더 ───
+renderCalendar();
+</script>
+</body>
+</html>
