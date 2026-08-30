@@ -11,7 +11,7 @@ body{font-family:'Pretendard',-apple-system,'Segoe UI',sans-serif;background:#f6
 .header{background:#ffffff;border-bottom:1px solid #e9e7e1;position:sticky;top:0;z-index:100}
 .header-inner{max-width:800px;margin:0 auto;padding:14px 22px;display:flex;align-items:center;justify-content:space-between}
 .header h1{font-size:17px;font-weight:700;color:#1c1c1e;letter-spacing:-.01em}
-.header-btns{display:flex;gap:8px}
+.header-btns{display:flex;gap:8px;align-items:center}
 .btn{padding:8px 14px;border-radius:8px;border:none;font-size:13px;cursor:pointer;font-weight:600;transition:all .15s}
 .btn-primary{background:#1c1c1e;color:#fff}
 .btn-primary:hover{background:#000}
@@ -25,6 +25,13 @@ body{font-family:'Pretendard',-apple-system,'Segoe UI',sans-serif;background:#f6
 .container{max-width:800px;margin:0 auto;padding:20px 22px}
 .section-title{font-size:15px;color:#5c5c60;margin:20px 0 10px;display:flex;align-items:center;justify-content:space-between;font-weight:600}
 .theme-count{font-size:12px;color:#a3a198;font-weight:400}
+/* 자동저장 상태 표시 */
+.autosave-status{font-size:11px;padding:4px 10px;border-radius:8px;font-weight:600}
+.autosave-status.idle{background:#f1efe9;color:#a3a198}
+.autosave-status.pending{background:#fbe9cf;color:#8a5a12}
+.autosave-status.saving{background:#fbe9cf;color:#8a5a12}
+.autosave-status.done{background:#e2f2e6;color:#1f7a41}
+.autosave-status.error{background:#fbeceb;color:#c73e3a}
 /* 테마 카드 */
 .theme-card{background:#ffffff;border-radius:14px;margin-bottom:12px;border:1px solid #d8d5cc;overflow:hidden}
 .theme-header{padding:14px 16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:background .15s}
@@ -82,6 +89,7 @@ body{font-family:'Pretendard',-apple-system,'Segoe UI',sans-serif;background:#f6
 <div class="header-inner">
   <h1>📋 종목 관리</h1>
   <div class="header-btns">
+    <span class="autosave-status idle" id="autosaveStatus">☁️ 대기중</span>
     <button class="btn btn-secondary" onclick="exportData()">💾 내보내기</button>
     <button class="btn btn-secondary" onclick="importData()">📥 데이터 가져오기</button>
     <button class="btn btn-primary" onclick="location.href='index.html'">📊 대시보드</button>
@@ -122,7 +130,47 @@ function saveData(data) {
   data.version = (data.version || 0) + 1;
   data.lastUpdated = new Date().toISOString();
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  scheduleAutoSave(data); // 종목/테마가 바뀔 때마다 GitHub data.json 자동 저장 예약
 }
+
+// ─── GitHub data.json 자동 저장 (마지막 수정 후 3초 뒤 한 번에 저장) ───
+const AUTO_SAVE_DELAY = 3000;
+let autoSaveTimer = null;
+
+function setAutoSaveStatus(state, text) {
+  const el = document.getElementById('autosaveStatus');
+  if (!el) return;
+  el.className = 'autosave-status ' + state;
+  el.textContent = text;
+}
+
+function scheduleAutoSave(data) {
+  clearTimeout(autoSaveTimer);
+  setAutoSaveStatus('pending', '⏳ 저장 대기중...');
+  autoSaveTimer = setTimeout(() => autoSaveToGithub(data), AUTO_SAVE_DELAY);
+}
+
+async function autoSaveToGithub(data) {
+  setAutoSaveStatus('saving', '☁️ 저장 중...');
+  try {
+    const res = await fetch('/api/save-data', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ data })
+    });
+    const json = await res.json();
+    if (json.success) {
+      setAutoSaveStatus('done', '✅ 자동 저장됨');
+    } else {
+      setAutoSaveStatus('error', '❌ 저장 실패');
+      console.error('자동 저장 실패:', json.error);
+    }
+  } catch (e) {
+    setAutoSaveStatus('error', '❌ 저장 실패');
+    console.error('자동 저장 실패:', e);
+  }
+}
+
 // ─── 토스트 ───
 function showToast(msg) {
   const t = document.getElementById('toast');
@@ -451,7 +499,7 @@ function exportData() {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
-  showToast('💾 data.json 다운로드 완료! 이제 GitHub에 올려주세요');
+  showToast('💾 data.json 다운로드 완료! (자동저장도 켜져있으니 참고용으로만 쓰셔도 돼요)');
 }
 // ─── 데이터 가져오기 (서버에서 최신 데이터 자동 로드) ───
 async function importData() {
