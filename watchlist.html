@@ -23,6 +23,13 @@ body{font-family:'Pretendard',-apple-system,'Segoe UI',sans-serif;background:#f6
 .btn-success:hover{background:#d3ecd9}
 .btn-amber{background:#f6e6c8;color:#8a5a12}
 .btn-amber:hover{background:#f0dab0}
+/* 자동저장 상태 표시 */
+.autosave-status{font-size:11px;padding:4px 10px;border-radius:8px;font-weight:600}
+.autosave-status.idle{background:#f1efe9;color:#a3a198}
+.autosave-status.pending{background:#fbe9cf;color:#8a5a12}
+.autosave-status.saving{background:#fbe9cf;color:#8a5a12}
+.autosave-status.done{background:#e2f2e6;color:#1f7a41}
+.autosave-status.error{background:#fbeceb;color:#c73e3a}
 .btn-small{padding:5px 10px;font-size:12px}
 .container{max-width:900px;margin:0 auto;padding:20px 22px}
 /* 요약 바 */
@@ -111,8 +118,10 @@ body{font-family:'Pretendard',-apple-system,'Segoe UI',sans-serif;background:#f6
 <div class="header-inner">
   <h1>📅 거래대금 추적 노트</h1>
   <div class="header-btns">
+    <span class="autosave-status idle" id="autosaveStatus">☁️ 대기중</span>
     <button class="btn btn-amber" onclick="openAddModal(todayStr())">+ 오늘 종목 등록</button>
     <button class="btn btn-secondary" onclick="exportData()">💾 내보내기</button>
+    <button class="btn btn-secondary" onclick="importData()">📥 데이터 가져오기</button>
     <button class="btn btn-primary" onclick="location.href='index.html'">📊 대시보드</button>
   </div>
 </div>
@@ -153,6 +162,45 @@ function loadData(){
 }
 function saveData(data){
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  scheduleAutoSave(data); // 종목이 바뀔 때마다 GitHub watchlist.json 자동 저장 예약
+}
+
+// ─── GitHub watchlist.json 자동 저장 (마지막 수정 후 3초 뒤 한 번에 저장) ───
+const AUTO_SAVE_DELAY = 3000;
+let autoSaveTimer = null;
+
+function setAutoSaveStatus(state, text){
+  const el = document.getElementById('autosaveStatus');
+  if(!el) return;
+  el.className = 'autosave-status ' + state;
+  el.textContent = text;
+}
+
+function scheduleAutoSave(data){
+  clearTimeout(autoSaveTimer);
+  setAutoSaveStatus('pending', '⏳ 저장 대기중...');
+  autoSaveTimer = setTimeout(() => autoSaveToGithub(data), AUTO_SAVE_DELAY);
+}
+
+async function autoSaveToGithub(data){
+  setAutoSaveStatus('saving', '☁️ 저장 중...');
+  try{
+    const res = await fetch('/api/save-data', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ data, file: 'watchlist.json' })
+    });
+    const json = await res.json();
+    if(json.success){
+      setAutoSaveStatus('done', '✅ 자동 저장됨');
+    } else {
+      setAutoSaveStatus('error', '❌ 저장 실패');
+      console.error('자동 저장 실패:', json.error);
+    }
+  } catch(e){
+    setAutoSaveStatus('error', '❌ 저장 실패');
+    console.error('자동 저장 실패:', e);
+  }
 }
 function todayStr(){
   const d = new Date();
@@ -494,6 +542,21 @@ function exportData(){
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
   URL.revokeObjectURL(url);
   showToast('💾 watchlist.json 다운로드 완료!');
+}
+
+// ─── 데이터 가져오기 (GitHub의 최신 watchlist.json 불러오기, 다른 기기와 동기화용) ───
+async function importData(){
+  try{
+    showToast('📥 데이터 가져오는 중...');
+    const res = await fetch('/watchlist.json?' + Date.now());
+    if(!res.ok) throw new Error('파일을 찾을 수 없습니다');
+    const data = await res.json();
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    showToast('✅ 기록 ' + (data.entries ? data.entries.length : 0) + '건 가져오기 완료!');
+    setTimeout(() => { location.reload(); }, 1200);
+  } catch(e){
+    showToast('❌ 데이터 가져오기 실패: ' + e.message);
+  }
 }
 
 // ─── 초기 렌더 ───
