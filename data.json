@@ -3340,14 +3340,6 @@
             "MLCC"
           ],
           "desc": ""
-        },
-        {
-          "name": "테스트",
-          "code": "",
-          "marketCap": "",
-          "desc": "",
-          "tags": [],
-          "news": ""
         }
       ]
     },
@@ -58958,6 +58950,6 @@
       ]
     }
   ],
-  "version": 2,
-  "lastUpdated": "2026-08-30T11:09:54.560Z"
+  "version": 3,
+  "lastUpdated": "2026-08-30T11:10:38.472Z"
 }
