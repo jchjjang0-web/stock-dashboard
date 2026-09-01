@@ -486,7 +486,7 @@ function renderMain() {
     return { theme, ti, stocks, top5, tvKing, avgRate, topRate, riseCount, dataCount, riseRatio, totalTV, top5RateSum, top5TV, strengthScore };
   });
 
-  // ─── 대장주(TOP1)가 겹치는 테마 중 TOP5 지표(top5RateSum → top5TV)가 더 강한 테마만 남기고 숨기기 ───
+  // ─── TOP5 종목이 OVERLAP_THRESHOLD개 이상 겹치는 테마 중 TOP5 지표(top5RateSum → top5TV)가 더 강한 테마만 남기고 숨기기 ───
   // "테마보기" 탭에서만 적용하고, "전체보기" 탭은 중복 제거 없이 다 보여줌
   function getTop5Codes(tc) {
     return new Set(tc.top5.map(s => s.code).filter(Boolean));
@@ -498,13 +498,21 @@ function renderMain() {
     dedupedThemeCards = themeCards; // 전체보기: 중복 제거 없이 전부 표시
   } else {
     const top5CodeSets = themeCards.map(getTop5Codes);
+    // 두 테마의 TOP5 종목이 겹치는 개수 (교집합 크기)
+    function overlapCount(setA, setB) {
+      let n = 0;
+      for (const code of setA) if (setB.has(code)) n++;
+      return n;
+    }
     dedupedThemeCards = themeCards.filter((tc, i) => {
       if (top5CodeSets[i].size === 0) return true; // 겹칠 종목 자체가 없으면 그대로 표시
       for (let j = 0; j < themeCards.length; j++) {
         if (i === j) continue;
-        // 1위 종목(대장주)이 서로 같을 때만 "겹침"으로 인정
-        const sameTop1 = tc.top5[0] && themeCards[j].top5[0] && tc.top5[0].code && tc.top5[0].code === themeCards[j].top5[0].code;
-        if (sameTop1) {
+        // TOP5 겹치는 종목이 OVERLAP_THRESHOLD개 이상이면 "같은 급등 무리"로 보고 겹침으로 인정
+        // (기존엔 1위 종목이 정확히 같을 때만 겹침으로 봤는데, 그럼 현대약품/삼익제약/바이오니아처럼
+        //  TOP5 순서만 다르고 실제로는 같은 종목군이 여러 카드에 흩어져 중복 노출되는 문제가 있었음)
+        const overlap = overlapCount(top5CodeSets[i], top5CodeSets[j]);
+        if (overlap >= OVERLAP_THRESHOLD) {
           const other = themeCards[j];
           // 겹치는 상대가 나보다 TOP5 등락률 합(top5RateSum)이 높으면 → 나는 숨김
           // 동점이면 TOP5 거래대금 합(top5TV)으로 2차 비교, 그래도 동점이면 원래 순서 앞선 쪽 유지
