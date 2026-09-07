@@ -863,7 +863,17 @@ async function fetchAll() {
     bg.className = 'st on';
     bg.textContent = `🟢 실시간 · ${ts}`;
     if (failedCodes.size > 0) {
-      document.getElementById('errA').innerHTML = `<div class="error-msg">⚠️ ${failedCodes.size}개 종목은 2번 재시도해도 실패했어요. "🔄 시세 불러오기"를 한 번 더 눌러보세요.</div>`;
+      // 실패한 종목코드 → 종목명 찾기 (테마 데이터에서 이름을 조회)
+      const codeNameMap = {};
+      data.themes.forEach(t => t.stocks.forEach(s => {
+        if (s.code && !codeNameMap[s.code]) codeNameMap[s.code] = s.name || '';
+      }));
+      const failedList = Array.from(failedCodes)
+        .map(c => `${codeNameMap[c] || '이름없음'}(${c})`)
+        .join(', ');
+      document.getElementById('errA').innerHTML =
+        `<div class="error-msg">⚠️ ${failedCodes.size}개 종목은 2번 재시도해도 실패했어요. "🔄 시세 불러오기"를 한 번 더 눌러보세요.<br>` +
+        `<span style="font-size:12px;opacity:0.85;">실패 종목: ${failedList}</span></div>`;
     }
   }
   btn.disabled = false;
