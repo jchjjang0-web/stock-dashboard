@@ -779,45 +779,69 @@ async function fetchAll() {
   let done = 0, ok = 0;
   const total = allCodes.size;
   const codeList = Array.from(allCodes);
-  const BATCH_SIZE = 5; // 한 번에 5개씩만 동시 요청 (API 제재 방지)
-  const BATCH_DELAY = 250; // 배치 사이 대기 시간(ms)
-  const failedCodes = new Set();
   const tokenParam = sharedToken ? `&token=${sharedToken}` : '';
 
-  async function fetchOne(code, isRetry) {
+  // ★ 속도 개선: 종목을 1개씩 요청하지 않고, 한투 "관심종목 멀티시세" API로
+  //   최대 30종목을 묶어서 한 번에 요청함 (요청 횟수가 최대 1/30로 줄어듦)
+  const GROUP_SIZE = 30;      // 한 번의 요청에 담을 종목 수 (한투 API 최대치)
+  const BATCH_SIZE = 5;       // 그룹 요청을 동시에 몇 개까지 보낼지 (API 제재 방지)
+  const BATCH_DELAY = 250;    // 배치(그룹 묶음) 사이 대기 시간(ms)
+
+  // 종목코드를 30개씩 그룹으로 나눔
+  function chunk(list, size) {
+    const out = [];
+    for (let i = 0; i < list.length; i += size) out.push(list.slice(i, i + size));
+    return out;
+  }
+
+  let failedCodes = new Set();
+
+  async function fetchGroup(codesInGroup, isRetry) {
     try {
-      const res = await fetch('/api/stock?code=' + code + tokenParam);
+      const res = await fetch('/api/stock?action=multi&codes=' + codesInGroup.join(',') + tokenParam);
       const d = await res.json();
-      if (d.success) {
-        liveData[code] = d;
-        ok++;
-        failedCodes.delete(code);
+      if (d.success && Array.isArray(d.results)) {
+        const returnedCodes = new Set();
+        d.results.forEach(item => {
+          if (item.code) {
+            liveData[item.code] = item;
+            returnedCodes.add(item.code);
+            ok++;
+          }
+        });
+        // 요청했는데 응답에 없는 종목은 실패로 처리 (상장폐지/코드오류 등)
+        codesInGroup.forEach(c => {
+          if (!returnedCodes.has(c)) failedCodes.add(c);
+          else failedCodes.delete(c);
+        });
       } else {
-        failedCodes.add(code);
+        codesInGroup.forEach(c => failedCodes.add(c));
       }
-    } catch(e) {
-      failedCodes.add(code);
+    } catch (e) {
+      codesInGroup.forEach(c => failedCodes.add(c));
     }
     if (!isRetry) {
-      done++;
+      done = Math.min(done + codesInGroup.length, total);
       pf.style.width = Math.round(done / total * 100) + '%';
       pt.textContent = `${done}/${total} 종목 (성공:${ok})`;
     }
   }
 
-  for (let i = 0; i < codeList.length; i += BATCH_SIZE) {
-    const batch = codeList.slice(i, i + BATCH_SIZE);
-    await Promise.all(batch.map(c => fetchOne(c, false)));
+  const groups = chunk(codeList, GROUP_SIZE);
+  for (let i = 0; i < groups.length; i += BATCH_SIZE) {
+    const batch = groups.slice(i, i + BATCH_SIZE);
+    await Promise.all(batch.map(g => fetchGroup(g, false)));
     await new Promise(r => setTimeout(r, BATCH_DELAY));
   }
 
-  // 실패한 종목 자동 재시도 (최대 2회)
+  // 실패한 종목 자동 재시도 (최대 2회, 역시 30개씩 묶어서)
   for (let retryRound = 1; retryRound <= 2 && failedCodes.size > 0; retryRound++) {
     const retryList = Array.from(failedCodes);
     pt.textContent = `재시도 중... (${retryList.length}개 종목, ${retryRound}차)`;
-    for (let i = 0; i < retryList.length; i += BATCH_SIZE) {
-      const batch = retryList.slice(i, i + BATCH_SIZE);
-      await Promise.all(batch.map(c => fetchOne(c, true)));
+    const retryGroups = chunk(retryList, GROUP_SIZE);
+    for (let i = 0; i < retryGroups.length; i += BATCH_SIZE) {
+      const batch = retryGroups.slice(i, i + BATCH_SIZE);
+      await Promise.all(batch.map(g => fetchGroup(g, true)));
       await new Promise(r => setTimeout(r, BATCH_DELAY));
     }
     pt.textContent = `${total}/${total} 종목 (성공:${ok}, 재시도 ${retryRound}차 완료)`;
