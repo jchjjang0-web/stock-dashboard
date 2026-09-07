@@ -847,6 +847,36 @@ async function fetchAll() {
     pt.textContent = `${total}/${total} 종목 (성공:${ok}, 재시도 ${retryRound}차 완료)`;
   }
 
+  // 최종 안전장치: 30개씩 묶어서도 계속 실패하는 종목은
+  // "그 묶음 안에 문제있는 종목 1개 때문에 나머지까지 같이 실패 처리"되는 경우가 있어서
+  // 남은 종목만 1개씩 다시 확인해봄 (억울하게 낀 정상 종목 구제용)
+  if (failedCodes.size > 0) {
+    const singleRetryList = Array.from(failedCodes);
+    pt.textContent = `개별 재확인 중... (${singleRetryList.length}개 종목)`;
+
+    async function fetchOneFinal(code) {
+      try {
+        const res = await fetch('/api/stock?code=' + code + tokenParam);
+        const d = await res.json();
+        if (d.success) {
+          liveData[code] = d;
+          ok++;
+          failedCodes.delete(code);
+        }
+      } catch (e) {
+        // 실패 시 failedCodes에 그대로 남겨둠 (진짜 문제있는 종목으로 확정)
+      }
+    }
+
+    const SINGLE_BATCH = 5;
+    for (let i = 0; i < singleRetryList.length; i += SINGLE_BATCH) {
+      const batch = singleRetryList.slice(i, i + SINGLE_BATCH);
+      await Promise.all(batch.map(c => fetchOneFinal(c)));
+      await new Promise(r => setTimeout(r, 250));
+    }
+    pt.textContent = `${total}/${total} 종목 (성공:${ok}, 개별 재확인 완료)`;
+  }
+
   // 렌더 갱신
   if (currentView === 'main') renderMain();
   else if (currentView === 'sub') openSub(currentThemeIdx);
@@ -872,7 +902,7 @@ async function fetchAll() {
         .map(c => `${codeNameMap[c] || '이름없음'}(${c})`)
         .join(', ');
       document.getElementById('errA').innerHTML =
-        `<div class="error-msg">⚠️ ${failedCodes.size}개 종목은 2번 재시도해도 실패했어요. "🔄 시세 불러오기"를 한 번 더 눌러보세요.<br>` +
+        `<div class="error-msg">⚠️ ${failedCodes.size}개 종목은 묶음 재시도 + 개별 재확인까지 해도 실패했어요. 상장폐지·거래정지 종목이거나 코드 오류일 수 있어요.<br>` +
         `<span style="font-size:12px;opacity:0.85;">실패 종목: ${failedList}</span></div>`;
     }
   }
