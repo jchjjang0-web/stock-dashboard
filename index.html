@@ -395,7 +395,6 @@ function renderStockList(mode, data) {
       <td>${i < 5 ? `<span class="rk-badge ${rankBg}">${i+1}</span>` : `<span style="color:#475569">${i+1}</span>`}</td>
       <td>
         <div class="sn">${s.name} <span class="sc">${s.code}</span></div>
-        <div class="st-tags">${s.themes.slice(0, 5).map(t => `<span class="st-tag">#${t}</span>`).join('')}${s.themes.length > 5 ? `<span class="st-tag">+${s.themes.length - 5}</span>` : ''}</div>
       </td>
       <td class="price">${fPrice(s.price)}</td>
       <td class="rate ${rateClass}">${rateText}</td>
