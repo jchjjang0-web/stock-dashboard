@@ -503,7 +503,7 @@ function renderMain() {
   function getTop5Codes(tc) {
     return new Set(tc.top5.map(s => s.code).filter(Boolean));
   }
-  const OVERLAP_THRESHOLD = 2;
+  const OVERLAP_THRESHOLD = 1;
 
   let dedupedThemeCards;
   if (viewMode === 'all') {
