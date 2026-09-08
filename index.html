@@ -503,7 +503,7 @@ function renderMain() {
   function getTop5Codes(tc) {
     return new Set(tc.top5.map(s => s.code).filter(Boolean));
   }
-  const OVERLAP_THRESHOLD = 1;
+  const OVERLAP_THRESHOLD = 2;
 
   let dedupedThemeCards;
   if (viewMode === 'all') {
@@ -516,15 +516,30 @@ function renderMain() {
       for (const code of setA) if (setB.has(code)) n++;
       return n;
     }
+    // 특정 종목이 해당 테마의 TOP5 안에서 몇 위(0=1위)인지
+    function rankOf(tc, code) {
+      return tc.top5.findIndex(s => s.code === code);
+    }
     dedupedThemeCards = themeCards.filter((tc, i) => {
       if (top5CodeSets[i].size === 0) return true; // 겹칠 종목 자체가 없으면 그대로 표시
       for (let j = 0; j < themeCards.length; j++) {
         if (i === j) continue;
-        // TOP5 겹치는 종목이 OVERLAP_THRESHOLD개 이상이면 "같은 급등 무리"로 보고 겹침으로 인정
-        // (기존엔 1위 종목이 정확히 같을 때만 겹침으로 봤는데, 그럼 현대약품/삼익제약/바이오니아처럼
-        //  TOP5 순서만 다르고 실제로는 같은 종목군이 여러 카드에 흩어져 중복 노출되는 문제가 있었음)
         const overlap = overlapCount(top5CodeSets[i], top5CodeSets[j]);
-        if (overlap >= OVERLAP_THRESHOLD) {
+        let isDup = overlap >= OVERLAP_THRESHOLD;
+
+        // 겹치는 종목이 딱 1개뿐이어도, 그 1개가 두 테마 모두에서 1~2위(가장 강한 자리)를 차지하고 있으면
+        // "같은 급등 신호가 두 테마에 중복 노출된 것"으로 보고 예외적으로 겹침 처리함.
+        // (TOP5 4~5위처럼 순위가 낮은 자리에 우연히 같은 종목이 껴 있는 경우는 진짜 다른 테마일 가능성이 높아 제외)
+        if (!isDup && overlap === 1) {
+          for (const code of top5CodeSets[i]) {
+            if (top5CodeSets[j].has(code)) {
+              if (rankOf(tc, code) <= 1 && rankOf(themeCards[j], code) <= 1) isDup = true;
+              break;
+            }
+          }
+        }
+
+        if (isDup) {
           const other = themeCards[j];
           // 겹치는 상대가 나보다 TOP5 등락률 합(top5RateSum)이 높으면 → 나는 숨김
           // 동점이면 TOP5 거래대금 합(top5TV)으로 2차 비교, 그래도 동점이면 원래 순서 앞선 쪽 유지
