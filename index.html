@@ -520,39 +520,56 @@ function renderMain() {
     function rankOf(tc, code) {
       return tc.top5.findIndex(s => s.code === code);
     }
-    dedupedThemeCards = themeCards.filter((tc, i) => {
-      if (top5CodeSets[i].size === 0) return true; // 겹칠 종목 자체가 없으면 그대로 표시
-      for (let j = 0; j < themeCards.length; j++) {
-        if (i === j) continue;
-        const overlap = overlapCount(top5CodeSets[i], top5CodeSets[j]);
-        let isDup = overlap >= OVERLAP_THRESHOLD;
-
-        // 겹치는 종목이 딱 1개뿐이어도, 그 1개가 두 테마 모두에서 1~2위(가장 강한 자리)를 차지하고 있으면
-        // "같은 급등 신호가 두 테마에 중복 노출된 것"으로 보고 예외적으로 겹침 처리함.
-        // (TOP5 4~5위처럼 순위가 낮은 자리에 우연히 같은 종목이 껴 있는 경우는 진짜 다른 테마일 가능성이 높아 제외)
-        if (!isDup && overlap === 1) {
-          for (const code of top5CodeSets[i]) {
-            if (top5CodeSets[j].has(code)) {
-              if (rankOf(tc, code) <= 1 && rankOf(themeCards[j], code) <= 1) isDup = true;
-              break;
-            }
-          }
-        }
-
-        if (isDup) {
-          const other = themeCards[j];
-          // 겹치는 상대가 나보다 TOP5 등락률 합(top5RateSum)이 높으면 → 나는 숨김
-          // 동점이면 TOP5 거래대금 합(top5TV)으로 2차 비교, 그래도 동점이면 원래 순서 앞선 쪽 유지
-          const otherWins =
-            other.top5RateSum > tc.top5RateSum ||
-            (other.top5RateSum === tc.top5RateSum && other.top5TV > tc.top5TV) ||
-            (other.top5RateSum === tc.top5RateSum && other.top5TV === tc.top5TV && j < i);
-          if (otherWins) {
-            return false;
+    function isDuplicate(i, j) {
+      const overlap = overlapCount(top5CodeSets[i], top5CodeSets[j]);
+      if (overlap >= OVERLAP_THRESHOLD) return true;
+      // 겹치는 종목이 딱 1개뿐이어도, 그 1개가 두 테마 모두에서 1~2위(가장 강한 자리)를 차지하고 있으면
+      // "같은 급등 신호가 두 테마에 중복 노출된 것"으로 보고 예외적으로 겹침 처리함.
+      if (overlap === 1) {
+        for (const code of top5CodeSets[i]) {
+          if (top5CodeSets[j].has(code)) {
+            return rankOf(themeCards[i], code) <= 1 && rankOf(themeCards[j], code) <= 1;
           }
         }
       }
-      return true;
+      return false;
+    }
+
+    // ── 겹치는 테마끼리 그룹(그룹 안에서는 몇 단계를 거쳐 연결돼도 하나로 묶임)으로 묶고,
+    //    그룹마다 가장 센 테마(top5RateSum → top5TV 순) 딱 1개만 남기기 (Union-Find) ──
+    const parent = themeCards.map((_, i) => i);
+    function find(x) { while (parent[x] !== x) { parent[x] = parent[parent[x]]; x = parent[x]; } return x; }
+    function union(a, b) { const ra = find(a), rb = find(b); if (ra !== rb) parent[ra] = rb; }
+
+    for (let i = 0; i < themeCards.length; i++) {
+      if (top5CodeSets[i].size === 0) continue;
+      for (let j = i + 1; j < themeCards.length; j++) {
+        if (top5CodeSets[j].size === 0) continue;
+        if (isDuplicate(i, j)) union(i, j);
+      }
+    }
+
+    // 그룹별로 가장 센 테마의 인덱스만 골라내기
+    const bestInGroup = {}; // groupRoot -> 가장 센 테마 인덱스
+    themeCards.forEach((tc, i) => {
+      const root = find(i);
+      const cur = bestInGroup[root];
+      if (cur === undefined) {
+        bestInGroup[root] = i;
+      } else {
+        const curTc = themeCards[cur];
+        const better =
+          tc.top5RateSum > curTc.top5RateSum ||
+          (tc.top5RateSum === curTc.top5RateSum && tc.top5TV > curTc.top5TV) ||
+          (tc.top5RateSum === curTc.top5RateSum && tc.top5TV === curTc.top5TV && i < cur);
+        if (better) bestInGroup[root] = i;
+      }
+    });
+    const winnerIndexSet = new Set(Object.values(bestInGroup));
+
+    dedupedThemeCards = themeCards.filter((tc, i) => {
+      if (top5CodeSets[i].size === 0) return true; // 겹칠 종목 자체가 없으면 그대로 표시
+      return winnerIndexSet.has(i);
     });
   }
 
