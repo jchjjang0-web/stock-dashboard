@@ -7,7 +7,7 @@
 <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Pretendard',-apple-system,'Segoe UI',sans-serif;background:#f6f5f2;color:#1c1c1e;min-height:100vh;-webkit-font-smoothing:antialiased}
+body{font-family:'Pretendard',-apple-system,'Segoe UI',sans-serif;background:#f6f5f2;color:#1c1c1e;min-height:100vh;-webkit-font-smoothing:antialiased;overflow-x:hidden}
 body,.price,.rate,.tv,.tc-tv,.tc-sr,.tc-str,.tc-stat-value{font-variant-numeric:tabular-nums}
 /* 헤더 */
 .header{background:#ffffff;border-bottom:1px solid #e9e7e1;position:sticky;top:0;z-index:100}
@@ -42,8 +42,9 @@ body,.price,.rate,.tv,.tc-tv,.tc-sr,.tc-str,.tc-stat-value{font-variant-numeric:
 .search-icon{position:absolute;left:15px;top:50%;transform:translateY(-50%);color:#a3a198}
 .filter-bar{display:flex;align-items:center;gap:10px;margin-bottom:18px;flex-wrap:wrap}
 .filter-info{font-size:12px;color:#a3a198}
-.sort-tabs{display:flex;gap:4px;background:#f1efe9;padding:4px;border-radius:11px}
-.sort-tab{padding:8px 16px;border-radius:8px;border:none;background:transparent;color:#6b6b6f;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s}
+.sort-tabs{display:flex;gap:4px;background:#f1efe9;padding:4px;border-radius:11px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.sort-tabs::-webkit-scrollbar{display:none}
+.sort-tab{padding:8px 16px;border-radius:8px;border:none;background:transparent;color:#6b6b6f;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;flex-shrink:0}
 .sort-tab:hover{color:#1c1c1e}
 .sort-tab.active{background:#ffffff;color:#1c1c1e;box-shadow:0 1px 3px rgba(28,28,30,.12)}
 /* 빈 상태 */
@@ -147,8 +148,9 @@ body,.price,.rate,.tv,.tc-tv,.tc-sr,.tc-str,.tc-stat-value{font-variant-numeric:
 .tc-crown{font-size:11px}
 .filter-bar{flex-direction:column;align-items:flex-start;gap:6px}
 .filter-info{font-size:11px}
-.sort-tabs{flex-wrap:nowrap;gap:3px}
-.sort-tab{padding:8px 12px;font-size:12.5px;white-space:nowrap}
+.sort-tabs{flex-wrap:nowrap;gap:3px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;margin:0 -12px;padding-left:12px;padding-right:12px;width:calc(100% + 24px)}
+.sort-tabs::-webkit-scrollbar{display:none}
+.sort-tab{padding:8px 12px;font-size:12.5px;white-space:nowrap;flex-shrink:0}
 .stock-table th{padding:8px 6px;font-size:10px}
 .stock-table td{padding:8px 6px;font-size:11.5px}
 .sn{font-size:12px}
