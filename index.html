@@ -127,6 +127,18 @@ body,.price,.rate,.tv,.tc-tv,.tc-sr,.tc-str,.tc-stat-value{font-variant-numeric:
 .modal-btns{display:flex;gap:8px;margin-top:18px;justify-content:flex-end}
 .modal-toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1c1c1e;color:#fff;padding:11px 22px;border-radius:10px;font-size:13px;font-weight:600;z-index:300;display:none;box-shadow:0 8px 24px rgba(28,28,30,.25)}
 .stock-table tr.editable:hover td{cursor:pointer;background:#faf9f6}
+/* 시간외 상승률 탭 */
+.af-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.af-note{font-size:12px;color:#8a8a8f;line-height:1.6;background:#ffffff;border:1px solid #e9e7e1;border-radius:10px;padding:10px 14px;margin-bottom:12px}
+.af-note b{color:#3a3a3d}
+.af-themes{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;align-items:center}
+.af-themes-label{font-size:12px;color:#8a8a8f;font-weight:600;margin-right:2px}
+.af-chip{font-size:12px;background:#fbe9cf;color:#8a5a12;padding:4px 10px;border-radius:14px;font-weight:600}
+.mk{display:inline-block;font-size:10px;font-weight:700;padding:1px 6px;border-radius:5px;margin-left:4px;vertical-align:1px}
+.mk-nxt{background:#e6ecf8;color:#3159a8}
+.mk-ovt{background:#f3e8f6;color:#7a3f8f}
+.st-tag.solo{background:#fbeceb;color:#c73e3a}
+.af-sub{font-size:11px;color:#a3a198;margin-top:2px}
 @media(max-width:600px){
 .theme-grid{grid-template-columns:1fr;gap:10px}
 .container{padding:14px 12px}
@@ -189,7 +201,7 @@ body,.price,.rate,.tv,.tc-tv,.tc-sr,.tc-str,.tc-stat-value{font-variant-numeric:
 <input type="text" id="searchInput" placeholder="종목명, 태그로 검색" oninput="renderSearch()">
 </div>
 
-<!-- 뷰 탭: 테마보기 / 거래대금 상위 / 상승률 / 하락률 -->
+<!-- 뷰 탭: 테마보기 / 테마 거래대금 / 전체보기 / 거래대금 상위 / 상승률 / 시간외 상승 -->
 <div class="filter-bar">
 <div class="sort-tabs">
 <button class="sort-tab" id="modeThemeBtn" onclick="setViewMode('theme')">테마보기</button>
@@ -197,7 +209,7 @@ body,.price,.rate,.tv,.tc-tv,.tc-sr,.tc-str,.tc-stat-value{font-variant-numeric:
 <button class="sort-tab" id="modeAllBtn" onclick="setViewMode('all')">전체보기</button>
 <button class="sort-tab" id="modeTvBtn" onclick="setViewMode('tv')">거래대금 상위</button>
 <button class="sort-tab" id="modeUpBtn" onclick="setViewMode('rate_up')">상승률</button>
-<button class="sort-tab" id="modeDownBtn" onclick="setViewMode('rate_down')">하락률</button>
+<button class="sort-tab" id="modeAfterBtn" onclick="setViewMode('after')">🌙 시간외 상승</button>
 </div>
 <span class="filter-info" id="filterInfo"></span>
 </div>
@@ -231,10 +243,13 @@ body,.price,.rate,.tv,.tc-tv,.tc-sr,.tc-str,.tc-stat-value{font-variant-numeric:
 const STORAGE_KEY = 'stock-dashboard-data';
 const LIVE_KEY = 'stock-live-data'; // 시세 데이터 저장용
 const TOP_FILTER_KEY = 'stock-dashboard-top-filter'; // 상승 테마만 보기 상태 저장용
+const AFTER_KEY = 'stock-after-data'; // 시간외 상승률 TOP20 저장용
+let afterData = null; // { items:[...], fetchedAt, errors }
+let afterLoading = false;
 let liveData = {}; // code -> {price, change, rate, up, tradingValue, ...}
 let currentView = 'main'; // main | sub
 let currentThemeIdx = -1;
-let viewMode = 'theme'; // theme | theme_tv | all | tv | rate_up | rate_down (상단 6개 탭)
+let viewMode = 'theme'; // theme | theme_tv | all | tv | rate_up | after (상단 6개 탭)
 let showAllThemes = false; // 테마 "더보기" 펼침 상태
 const THEME_DISPLAY_LIMIT = 9; // 기본으로 보여줄 테마 개수
 
@@ -276,7 +291,7 @@ function loadLiveData() {
 function loadViewMode() {
   try {
     const raw = localStorage.getItem(TOP_FILTER_KEY);
-    if (raw === 'theme' || raw === 'theme_tv' || raw === 'all' || raw === 'tv' || raw === 'rate_up' || raw === 'rate_down') return raw;
+    if (raw === 'theme' || raw === 'theme_tv' || raw === 'all' || raw === 'tv' || raw === 'rate_up' || raw === 'after') return raw;
   } catch(e) {}
   return 'theme'; // 기본값
 }
@@ -302,14 +317,14 @@ function fTV(v) {
 const RC = ['rk1','rk2','rk3','rk4','rk5'];
 
 
-// ─── 뷰 탭 (테마보기 / 테마 거래대금 / 전체보기 / 거래대금 상위 / 상승률 / 하락률) ───
+// ─── 뷰 탭 (테마보기 / 테마 거래대금 / 전체보기 / 거래대금 상위 / 상승률 / 시간외 상승) ───
 function renderViewTabs() {
   document.getElementById('modeThemeBtn').className = 'sort-tab' + (viewMode === 'theme' ? ' active' : '');
   document.getElementById('modeThemeTvBtn').className = 'sort-tab' + (viewMode === 'theme_tv' ? ' active' : '');
   document.getElementById('modeAllBtn').className = 'sort-tab' + (viewMode === 'all' ? ' active' : '');
   document.getElementById('modeTvBtn').className = 'sort-tab' + (viewMode === 'tv' ? ' active' : '');
   document.getElementById('modeUpBtn').className = 'sort-tab' + (viewMode === 'rate_up' ? ' active' : '');
-  document.getElementById('modeDownBtn').className = 'sort-tab' + (viewMode === 'rate_down' ? ' active' : '');
+  document.getElementById('modeAfterBtn').className = 'sort-tab' + (viewMode === 'after' ? ' active' : '');
 }
 
 function setViewMode(mode) {
@@ -426,6 +441,12 @@ function renderMain() {
   currentView = 'main';
 
   renderViewTabs();
+
+  // 시간외 상승 탭: 테마 데이터가 없어도 볼 수 있음 (테마 이름 표시만 data.json 사용)
+  if (viewMode === 'after') {
+    renderAfterMarket(data);
+    return;
+  }
 
   if (data.themes.length === 0) {
     document.getElementById('filterInfo').textContent = '';
@@ -722,6 +743,147 @@ function openSub(ti) {
   });
   html += `</tbody></table></div>`;
   subView.innerHTML = html;
+}
+
+// ─── 시간외 상승률 TOP20 (NXT 애프터마켓 + KRX 시간외 단일가) ───
+function saveAfterData() {
+  try { localStorage.setItem(AFTER_KEY, JSON.stringify(afterData)); } catch(e) {}
+}
+function loadAfterData() {
+  try {
+    const raw = localStorage.getItem(AFTER_KEY);
+    if (raw) afterData = JSON.parse(raw);
+  } catch(e) {}
+}
+
+// 종목코드 → 소속 테마 목록 (data.json 기준)
+function buildCodeThemeMap(data) {
+  const m = {};
+  (data.themes || []).forEach(t => (t.stocks || []).forEach(s => {
+    if (!s.code) return;
+    if (!m[s.code]) m[s.code] = [];
+    if (!m[s.code].includes(t.name)) m[s.code].push(t.name);
+  }));
+  return m;
+}
+
+async function fetchAfter() {
+  if (afterLoading) return;
+  afterLoading = true;
+  if (currentView === 'main' && viewMode === 'after') renderMain();
+  const bg = document.getElementById('stB');
+  bg.className = 'st ld';
+  bg.textContent = '⏳ 시간외 수신중';
+  document.getElementById('errA').innerHTML = '';
+  try {
+    // 토큰을 먼저 받아서 재사용 (토큰 재발급 최소화)
+    let tokenParam = '';
+    try {
+      const tr = await fetch('/api/stock?action=token');
+      const td = await tr.json();
+      if (td.success) tokenParam = '&token=' + td.token;
+    } catch (e) {}
+    const res = await fetch('/api/stock?action=after' + tokenParam);
+    const d = await res.json();
+    if (!d.success) throw new Error(d.error || '조회 실패');
+    afterData = { items: d.items || [], fetchedAt: d.fetchedAt, errors: d.errors || [] };
+    saveAfterData();
+    const ts = new Date().toLocaleString('ko-KR', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+    bg.className = 'st on';
+    bg.textContent = `🌙 시간외 · ${ts}`;
+  } catch (e) {
+    document.getElementById('errA').innerHTML = `<div class="error-msg">❌ 시간외 시세 불러오기 실패: ${e.message}</div>`;
+    bg.className = 'st off';
+    bg.textContent = '❌ 실패';
+  }
+  afterLoading = false;
+  if (currentView === 'main' && viewMode === 'after') renderMain();
+}
+
+function renderAfterMarket(data) {
+  const mainView = document.getElementById('mainView');
+  const codeThemes = buildCodeThemeMap(data);
+  const items = afterData && afterData.items ? afterData.items : [];
+  const fetchedText = afterData && afterData.fetchedAt
+    ? new Date(afterData.fetchedAt).toLocaleString('ko-KR', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' }) + ' 기준'
+    : '';
+
+  document.getElementById('filterInfo').textContent =
+    items.length ? `시간외 상승률 상위 ${items.length}종목 · ${fetchedText}` : '';
+
+  let html = `<div class="af-bar">
+    <button class="btn btn-primary btn-small" onclick="fetchAfter()" ${afterLoading ? 'disabled' : ''}>
+      ${afterLoading ? '⏳ 불러오는 중...' : '🌙 시간외 시세 불러오기'}
+    </button>
+  </div>
+  <div class="af-note">
+    <b>시간외 등락률 = 오늘 정규장 종가 대비</b> 장 끝난 뒤 얼마나 더 올랐는지예요.<br>
+    <span class="mk mk-nxt">NXT</span> 넥스트레이드 애프터마켓 (15:30~20:00) ·
+    <span class="mk mk-ovt">단일가</span> 한국거래소 시간외 단일가 (16:00~18:00)<br>
+    두 곳에서 다 거래되면 더 높은 쪽 기준으로 순위를 매겨요.
+  </div>`;
+
+  if (afterData && afterData.errors && afterData.errors.length) {
+    html += `<div class="error-msg" style="margin-bottom:12px">⚠️ 일부만 불러왔어요: ${afterData.errors.join(' / ')}</div>`;
+  }
+
+  if (!items.length) {
+    html += `<div class="empty">
+      <div class="empty-icon">🌙</div>
+      <div class="empty-text">${afterData
+        ? '지금은 시간외에서 오른 종목이 없어요.<br>애프터마켓은 오후 3시 30분 이후에 열려요.'
+        : '"🌙 시간외 시세 불러오기"를 눌러주세요.<br>오후 3시 30분 이후에 의미 있는 결과가 나와요.'}</div>
+    </div>`;
+    mainView.innerHTML = html;
+    return;
+  }
+
+  // 시간외에서 여러 종목이 같이 오른 테마 (2종목 이상) — 다음 날 주도 테마 후보
+  const themeCount = {};
+  items.forEach(it => (codeThemes[it.code] || []).forEach(t => { themeCount[t] = (themeCount[t] || 0) + 1; }));
+  const hotThemes = Object.entries(themeCount).filter(([, n]) => n >= 2).sort((a, b) => b[1] - a[1]).slice(0, 8);
+  if (hotThemes.length) {
+    html += `<div class="af-themes"><span class="af-themes-label">🔥 시간외 동반 상승 테마</span>` +
+      hotThemes.map(([t, n]) => `<span class="af-chip">${t} ${n}</span>`).join('') + `</div>`;
+  }
+
+  html += `<div style="overflow-x:auto"><table class="stock-table"><thead><tr>
+    <th style="width:34px">#</th><th>종목</th><th class="price">시간외가</th><th class="rate">시간외 등락</th><th class="rate">오늘 종가</th>
+  </tr></thead><tbody>`;
+
+  items.forEach((it, i) => {
+    const rankBg = i < 5 ? RC[i] : '';
+    const themes = codeThemes[it.code] || [];
+    const tagsHtml = themes.length
+      ? themes.slice(0, 3).map(t => `<span class="st-tag">#${t}</span>`).join('') + (themes.length > 3 ? `<span class="st-tag">+${themes.length - 3}</span>` : '')
+      : `<span class="st-tag solo">개별이슈</span>`;
+    const badges = (it.nxt ? '<span class="mk mk-nxt">NXT</span>' : '') + (it.ovtm ? '<span class="mk mk-ovt">단일가</span>' : '');
+
+    // 대표 가격 = 더 높은 등락률을 낸 쪽
+    const useNxt = it.nxt && (!it.ovtm || it.nxt.rate >= it.ovtm.rate);
+    const main = useNxt ? it.nxt : it.ovtm;
+    const other = useNxt ? it.ovtm : it.nxt;
+    const otherLabel = useNxt ? '단일가' : 'NXT';
+    const otherHtml = other ? `<div class="af-sub">${otherLabel} ${fRate(other.rate)}</div>` : '';
+
+    const dayClass = it.dayRate > 0 ? 'up' : it.dayRate < 0 ? 'down' : 'flat';
+    const dayHtml = it.close
+      ? `${fPrice(it.close)}<div class="af-sub rate ${dayClass}" style="font-weight:600">${typeof it.dayRate === 'number' && !isNaN(it.dayRate) ? fRate(it.dayRate) : '-'}</div>`
+      : '-';
+
+    html += `<tr>
+      <td>${i < 5 ? `<span class="rk-badge ${rankBg}">${i+1}</span>` : `<span style="color:#475569">${i+1}</span>`}</td>
+      <td>
+        <div class="sn">${it.name} <span class="sc">${it.code}</span>${badges}</div>
+        <div class="st-tags">${tagsHtml}</div>
+      </td>
+      <td class="price">${fPrice(main.price)}</td>
+      <td class="rate up">${fRate(it.bestRate)}${otherHtml}</td>
+      <td class="price">${dayHtml}</td>
+    </tr>`;
+  });
+  html += '</tbody></table></div>';
+  mainView.innerHTML = html;
 }
 
 // ─── 검색 ───
@@ -1042,6 +1204,7 @@ async function importData() {
 
 // ─── 초기: 저장된 시세 및 필터 상태 불러오기 ───
 viewMode = loadViewMode();
+loadAfterData();
 const savedAt = loadLiveData();
 if (savedAt) {
   const t = new Date(savedAt).toLocaleString('ko-KR', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' });
